@@ -90,9 +90,9 @@ class ChoiceInteraction:
         while len(correct) is not 0:
             correct_response_value = SubElement(correct_response, 'value')
             correct_response_value.text = self.char[correct.pop(0)]
-            outcome_declaration = SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
-                                                                                     'cardinality': 'single',
-                                                                                     'baseType': 'float'})
+        outcome_declaration = SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
+                                                                                 'cardinality': 'single',
+                                                                                 'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
         choice_interaction = SubElement(item_body, 'choiceInteraction', {'responseIdentifier': 'RESPONSE',
                                                                          'shuffle': shuffle,

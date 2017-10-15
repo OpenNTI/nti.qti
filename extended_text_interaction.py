@@ -8,7 +8,7 @@ from xml.etree.ElementTree import SubElement
 from xml.etree.ElementTree import tostring
 
 
-class UploadInteraction:
+class ExtendedTextInteraction:
     def __init__(self, identifier, prompt):
         if type(identifier) is str:
             self.identifier = identifier
@@ -32,13 +32,14 @@ class UploadInteraction:
         response_declaration = SubElement(assessment_item, 'responseDeclaration',
                                           {'identifier': 'RESPONSE',
                                            'cardinality': 'single',
-                                           'baseType': 'file'})
+                                           'baseType': 'string'})
         outcome_declaration = SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
                                                                                  'cardinality': 'single',
-                                                                                 'baseType': 'float'})
+                                                                                 'baseType': 'float',
+                                                                                 'externalScored': 'human'})
         item_body = SubElement(assessment_item, 'itemBody')
-        upload_interaction = SubElement(item_body, 'uploadInteraction', {'responseIdentifier': 'RESPONSE'})
-        prompt__sub_element = SubElement(upload_interaction, 'prompt')
+        extended_text_interaction = SubElement(item_body, 'extendedTextInteraction', {'responseIdentifier': 'RESPONSE'})
+        prompt__sub_element = SubElement(extended_text_interaction, 'prompt')
         prompt__sub_element.text = self.prompt
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
@@ -48,9 +49,8 @@ class UploadInteraction:
 
     def to_nti(self):
         nti_json = '{"Class":"Question", "MimeType":"mime_type", "NTIID":"nti_id", "content":"' + self.prompt + '", ' \
-                   '"ntiid":"nti_id", "parts":[{"Class":"FilePart", "MimeType":"mime_type", ' \
-                   '"allowed_extensions":[".docx", ".pdf"], "allowed_mime_types":["*/*"], "content":"", ' \
-                   '"explanation":"", "hints":[], "max_file_size":10485760, "solutions":[]}]}'
+                   '"ntiid":"nti_id", "parts":[{"Class":"ModeledContentPart", "MimeType":"mime_type", "content":"", ' \
+                   '"explanation":"", "hints":[], "solutions":[]}]}'
         parsed = loads(nti_json)
         nti_file = open(self.identifier + '.json', 'w+')
         nti_file.write(dumps(parsed, indent=4))

@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from json import dumps
 from json import loads
 
@@ -31,7 +33,9 @@ class ChoiceInteraction:
         elif len(correct) == 1:
             self.multiple_answer = False
         else:
-            raise AttributeError('Correct[] needs to be greater than 0.')
+            raise ValueError('Correct[] cannot be empty.')
+        if len(choice) <= 0:
+            raise ValueError('Choice[] cannot be empty.')
         self.char = {
             '0': 'ChoiceA',
             '1': 'ChoiceB',
@@ -62,6 +66,12 @@ class ChoiceInteraction:
         }
 
     def to_qti(self, adaptive='false', time_dependent='false', shuffle='false'):
+        choice = deepcopy(self.choice)
+        correct = deepcopy(self.correct)
+        if len(choice) <= 0:
+            raise ValueError('Choice[] cannot be empty.')
+        if len(correct) <= 0:
+            raise ValueError('Correct[] cannot be empty.')
         assessment_item = Element('assessmentItem', {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                                      'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
                                                      'xsi:schemaLocation':
@@ -77,9 +87,9 @@ class ChoiceInteraction:
                                                'multiple' if self.multiple_answer else 'single',
                                            'baseType': 'identifier'})
         correct_response = SubElement(response_declaration, 'correctResponse')
-        while len(self.correct) is not 0:
+        while len(correct) is not 0:
             correct_response_value = SubElement(correct_response, 'value')
-            correct_response_value.text = self.char[self.correct.pop(0)]
+            correct_response_value.text = self.char[correct.pop(0)]
             outcome_declaration = SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
                                                                                      'cardinality': 'single',
                                                                                      'baseType': 'float'})
@@ -91,10 +101,10 @@ class ChoiceInteraction:
         prompt__sub_element = SubElement(choice_interaction, 'prompt')
         prompt__sub_element.text = self.prompt
         identifier = 0
-        while len(self.choice) is not 0:
+        while len(choice) is not 0:
             simple_choice = SubElement(choice_interaction, 'simpleChoice', {'identifier':
                                                                             str(self.char[str(identifier)])})
-            simple_choice.text = self.choice.pop(0)
+            simple_choice.text = choice.pop(0)
             identifier += 1
         response_processing = SubElement(assessment_item, 'responseProcessing',
                                          {'template':
@@ -106,17 +116,17 @@ class ChoiceInteraction:
         qti_file.close()
 
     def to_nti(self):
-        choice = self.choice
-        correct = self.correct
-        if len(choice) < 0:
+        choice = deepcopy(self.choice)
+        correct = deepcopy(self.correct)
+        if len(choice) <= 0:
             raise ValueError('Choice[] cannot be empty.')
-        if len(correct) < 0:
+        if len(correct) <= 0:
             raise ValueError('Correct[] cannot be empty.')
         if type(int(correct[0])) is not int:
             for place, value in enumerate(correct):
                 value = str(self.char.keys()[self.char.values().index(correct[place])])
                 correct[place] = value
-        nti_json = '{"Class":"Question", "MimeType":"mime_type", "NTIID":"nti_id", "content":"content_content",' \
+        nti_json = '{"Class":"Question", "MimeType":"mime_type", "NTIID":"nti_id", "content":"' + self.prompt + '", ' \
                    '"ntiid":"nti_id", "parts":[{"Class":' + \
                    ('"MultipleChoiceMultipleAnswerPart"' if self.multiple_answer else '"MultipleChoicePart"') + ', ' \
                    '"MimeType":"mime_type", "choices":["'
@@ -138,3 +148,4 @@ class ChoiceInteraction:
         nti_file = open(self.identifier + '.json', 'w+')
         nti_file.write(dumps(parsed, indent=4))
         nti_file.close()
+

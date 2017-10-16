@@ -1,4 +1,6 @@
-﻿from json import dumps
+﻿from io import open
+
+from json import dumps
 from json import loads
 
 from xml.dom.minidom import parseString
@@ -10,7 +12,7 @@ from xml.etree.ElementTree import tostring
 
 class UploadInteraction:
 
-    def __init__(self, identifier, prompt, title=''):
+    def __init__(self, identifier, prompt, title):
         if type(identifier) is str:
             self.identifier = identifier
         else:
@@ -53,7 +55,8 @@ class UploadInteraction:
 
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
-        qti_file = open(self.identifier + '.xml', 'w+')
+
+        qti_file = open(self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -66,8 +69,9 @@ class UploadInteraction:
                    '"parts":[{"Class":"FilePart", "MimeType":' + mime_type_f + ', ' \
                    '"allowed_extensions":[".docx", ".pdf"], "allowed_mime_types":["*/*"], "content":"", ' \
                    '"explanation":"", "hints":[], "max_file_size":10485760, "solutions":[]}]}'
+
         parsed = loads(nti_json)
 
-        nti_file = open(self.identifier + '.json', 'w+')
-        nti_file.write(dumps(parsed, indent=4))
+        nti_file = open(self.title + '.json', 'w+', encoding="utf-8")
+        nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
         nti_file.close()

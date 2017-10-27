@@ -1,5 +1,5 @@
 from choice_interaction__parser import ChoiceInteraction
-from extended_text__interaction import ExtendedTextInteraction
+from extended_text_interaction__parser import ExtendedTextInteraction
 from text_entry_interaction__parser import TextEntryInteraction
 from upload_interaction__parser import UploadInteraction
 
@@ -31,12 +31,15 @@ class NTICollector(object):
         self.value_fr__pattern = compile(value_fr__re)
 
         self.line_counter = 0
+        self.total_lines = self.lines()
         self.identifier = ''
         self.prompt = ''
         self.title = ''
+        self.value_single = ''
         self.choices = []
         self.values = []
         self.questions = []
+
 
     def collect(self):
         infile = open(self.file_name, 'r')
@@ -79,7 +82,7 @@ class NTICollector(object):
                     elif '"content":' in line:
                         matcher = self.prompt_pattern.search(line)
                         if matcher is not None:
-                            self.prompt = matcher.group(1)
+                            self.prompt += ' ' + matcher.group(1)
 
                     if '"value":' in line:
                         matcher = self.value_mc__pattern.search(line)
@@ -89,8 +92,8 @@ class NTICollector(object):
                 self.questions.append(
                     ChoiceInteraction(self.identifier, self.prompt, self.title, self.values, self.choices))
 
-                del self.choices[:]
-                del self.values[:]
+                self.choices = []
+                self.values = []
 
             if '"Class": "MultipleChoiceMultipleAnswerPart",' in line:
                 while '"weight":' not in line:
@@ -112,7 +115,7 @@ class NTICollector(object):
                     elif '"content":' in line:
                         matcher = self.prompt_pattern.search(line)
                         if matcher is not None:
-                            self.prompt = matcher.group(1)
+                            self.prompt += ' ' + matcher.group(1)
 
                     if '"value": [' in line:
                         while '],' not in line:
@@ -126,14 +129,14 @@ class NTICollector(object):
                 self.questions.append(
                     ChoiceInteraction(self.identifier, self.prompt, self.title, self.values, self.choices))
 
-                del self.choices[:]
-                del self.values[:]
+                self.choices = []
+                self.values = []
 
             if '"Class": "ModeledContentPart"' in line:
                 self.questions.append(ExtendedTextInteraction(self.identifier, self.prompt, self.title))
 
             if '"Class": "FreeResponsePart",' in line:
-                while '"Class": "Question"' not in line:
+                while '"Class": "Question"' not in line and self.line_counter is not self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -141,12 +144,44 @@ class NTICollector(object):
                         matcher = self.value_fr__pattern.search(line)
                         if matcher is not None:
                             self.values.append(str(matcher.group(1)))
-                print self.line_counter
+
+                    if '"content": "",' in line:
+                        self.line_counter += 1
+                        line = next(infile)
+                    elif '"content":' in line:
+                        matcher = self.prompt_pattern.search(line)
+                        if matcher is not None:
+                            self.prompt += ' ' + matcher.group(1)
+
                 self.questions.append(
                     TextEntryInteraction(self.identifier, self.prompt, self.title, self.values))
 
-                del self.choices[:]
-                del self.values[:]
+                self.choices = []
+                self.values = []
+
+            if '"Class": "SymbolicMathPart",' in line:
+                while '"Class": "Question"' not in line and self.line_counter is not self.total_lines:
+                    self.line_counter += 1
+                    line = next(infile)
+
+                    if '"content": "",' in line:
+                        self.line_counter += 1
+                        line = next(infile)
+                    elif '"content":' in line:
+                        matcher = self.prompt_pattern.search(line)
+                        if matcher is not None:
+                            self.prompt += ' ' + matcher.group(1)
+
+                    if '"value": ' in line:
+                        matcher = self.value_fr__pattern.search(line)
+                        if matcher is not None:
+                            self.value_single = str(matcher.group(1))
+
+                self.questions.append(
+                    TextEntryInteraction(self.identifier, self.prompt, self.title, self.value_single, True))
+
+                self.choices = []
+                self.values = []
 
             if '"Class": "FilePart"' in line:
                 self.questions.append(UploadInteraction(self.identifier, self.prompt, self.title))
@@ -162,3 +197,9 @@ class NTICollector(object):
         if nti:
             for interaction in self.questions:
                 interaction.to_qti()
+
+    def lines(self):
+        lines = 0
+        for line in open(self.file_name):
+            lines += 1
+        return lines

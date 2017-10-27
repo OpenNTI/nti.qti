@@ -106,9 +106,14 @@ class TextEntryInteraction(object):
                                                                         'expectedLength': length})
         if not self.math and new_prompt:
             text_entry_interaction.tail = new_prompt.pop(0)
-        response_processing = \
-            SubElement(assessment_item, 'responseProcessing',
-                       {'template': 'http://www.imsglobal.org/question/qti_v2p2/rptemplates/map_response'})
+        if not self.math:
+            response_processing = \
+                SubElement(assessment_item, 'responseProcessing',
+                           {'template': 'http://www.imsglobal.org/question/qti_v2p2/rptemplates/map_response'})
+        if self.math:
+            response_processing = \
+                SubElement(assessment_item, 'responseProcessing',
+                           {'template': 'http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct'})
 
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)

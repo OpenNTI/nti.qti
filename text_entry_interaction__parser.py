@@ -20,12 +20,12 @@ class TextEntryInteraction(object):
         if type(identifier) is str:
             self.identifier = identifier
         else:
-            raise TypeError('Identifier needs to be a str type.')
+            raise TypeError('identifier needs to be a str type')
 
         if type(prompt) is str:
             self.prompt = prompt
         else:
-            raise TypeError('Prompt needs to be a str type.')
+            raise TypeError('prompt needs to be a str type')
 
         if type(title) is str:
             if not title:
@@ -33,38 +33,38 @@ class TextEntryInteraction(object):
             else:
                 self.title = title
         else:
-            raise TypeError('Title needs to be a str type.')
+            raise TypeError('title needs to be a str type')
 
         if type(math) is bool:
             self.math = math
         else:
-            raise TypeError('Math needs to be a bool type.')
+            raise TypeError('math needs to be a bool type')
 
         if not self.math:
             if type(values) is list:
                 self.values = values
             else:
-                raise TypeError('Values[] needs to be a list type.')
+                raise TypeError('values[] needs to be a list type')
         if self.math:
             if type(values) is str:
                 self.values = values
             else:
-                raise TypeError('Values needs to be a str type.')
+                raise TypeError('values needs to be a str type')
 
         if not identifier:
-            raise ValueError('Identifier cannot be empty.')
+            raise ValueError('identifier cannot be empty')
 
         if not prompt:
-            raise ValueError('Prompt cannot be empty.')
+            raise ValueError('prompt cannot be empty')
 
         if not self.math:
             if not values:
-                raise ValueError('Values[] cannot be empty.')
+                raise ValueError('values[] cannot be empty')
         if self.math:
             if not values:
-                raise ValueError('Values cannot be empty.')
+                raise ValueError('values cannot be empty')
 
-    def to_qti(self, time_dependent='false'):
+    def to_qti(self, adaptive='false', time_dependent='false'):
         length = str(len(self.values))
         new_prompt = split('_+', self.prompt)
         values = deepcopy(self.values)
@@ -79,6 +79,7 @@ class TextEntryInteraction(object):
                                                          "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
                                                      'identifier': self.identifier,
                                                      'title': self.title,
+                                                     'adaptive': adaptive,
                                                      'timeDependent': time_dependent})
         response_declaration = SubElement(assessment_item, 'responseDeclaration',
                                           {'identifier': 'RESPONSE',
@@ -118,7 +119,7 @@ class TextEntryInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open(self.title + '.xml', 'w+', encoding="utf-8")
+        qti_file = open('/QTI_Questions/textEntryInteraction_Questions/' + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -144,7 +145,7 @@ class TextEntryInteraction(object):
 
             parsed = loads(nti_json)
 
-            nti_file = open(self.title + '.json', 'w+', encoding="utf-8")
+            nti_file = open('/NTI_Questions/SymbolicMathPart_Questions/' + self.title + '.json', 'w+', encoding="utf-8")
             nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
             nti_file.close()
 
@@ -162,6 +163,6 @@ class TextEntryInteraction(object):
 
             parsed = loads(nti_json)
 
-            nti_file = open(self.title + '.json', 'w+', encoding="utf-8")
+            nti_file = open('/NTI_Questions/FreeResponsePart_Questions/' + self.title + '.json', 'w+', encoding="utf-8")
             nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
             nti_file.close()

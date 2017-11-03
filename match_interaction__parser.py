@@ -12,9 +12,9 @@ from xml.etree.ElementTree import SubElement
 from xml.etree.ElementTree import tostring
 
 
-class ChoiceInteraction(object):
+class MatchInteraction(object):
 
-    def __init__(self, identifier, prompt, title, values, choices):
+    def __init__(self, identifier, prompt, title, labels, solutions, values):
         if type(identifier) is str:
             self.identifier = identifier
         else:
@@ -33,15 +33,20 @@ class ChoiceInteraction(object):
         else:
             raise TypeError('title needs to be a str type')
 
+        if type(labels) is list:
+            self.labels = labels
+        else:
+            raise TypeError('labels[] needs to be a list type')
+
+        if type(solutions) is list:
+            self.solutions = solutions
+        else:
+            raise TypeError('solutions[] needs to be a list type')
+
         if type(values) is list:
             self.values = values
         else:
             raise TypeError('values[] needs to be a list type')
-
-        if type(choices) is list:
-            self.choices = choices
-        else:
-            raise TypeError('choices[] needs to be a list type')
 
         if not identifier:
             raise ValueError('identifier cannot be empty')
@@ -49,15 +54,14 @@ class ChoiceInteraction(object):
         if not prompt:
             raise ValueError('prompt cannot be empty')
 
-        if len(values) > 1:
-            self.multiple_answer = True
-        elif len(values) == 1:
-            self.multiple_answer = False
-        else:
-            raise ValueError('values[] cannot be empty')
+        if not labels:
+            raise ValueError('labels[] cannot be empty')
 
-        if not choices:
-            raise ValueError('choices[] cannot be empty')
+        if not solutions:
+            raise ValueError('solutions[] cannot be empty')
+
+        if not values:
+            raise ValueError('values[] cannot be empty')
 
         self.char = {
             '0': 'ChoiceA',
@@ -89,11 +93,15 @@ class ChoiceInteraction(object):
         }
 
     def to_qti(self, adaptive='false', time_dependent='false', shuffle='false'):
-        choices = deepcopy(self.choices)
+        labels = deepcopy(self.labels)
+        solutions = deepcopy(self.solutions)
         values = deepcopy(self.values)
 
-        if not choices:
-            raise ValueError('choices[] cannot be empty')
+        if not labels:
+            raise ValueError('labels[] cannot be empty')
+
+        if not solutions:
+            raise ValueError('solutions[] cannot be empty')
 
         if not values:
             raise ValueError('values[] cannot be empty')
@@ -109,9 +117,8 @@ class ChoiceInteraction(object):
                                                      'timeDependent': time_dependent})
         response_declaration = SubElement(assessment_item, 'responseDeclaration',
                                           {'identifier': 'RESPONSE',
-                                           'cardinality':
-                                               'multiple' if self.multiple_answer else 'single',
-                                           'baseType': 'identifier'})
+                                           'cardinality': 'multiple',
+                                           'baseType': 'directedPair'})
         correct_response = SubElement(response_declaration, 'correctResponse')
         while values:
             correct_response_value = SubElement(correct_response, 'value')
@@ -139,7 +146,7 @@ class ChoiceInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open('/QTI_Questions/choiceInteraction_Questions/' + self.title + '.xml', 'w+', encoding="utf-8")
+        qti_file = open('/QTI_Questions/matchInteraction_Questions/' + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -148,10 +155,8 @@ class ChoiceInteraction(object):
         values = deepcopy(self.values)
 
         mime_type_q = '"application/vnd.nextthought.naquestion"'
-        mime_type_mc = '"application/vnd.nextthought.assessment.multiplechoicepart"'
-        mime_type_mc_ma = '"application/vnd.nextthought.assessment.multiplechoicemultipleanswerpart"'
-        mime_type_mc_s = '"application/vnd.nextthought.assessment.multiplechoicesolution"'
-        mime_type_mc_ma_s = '"application/vnd.nextthought.assessment.multiplechoicemultipleanswersolution"'
+        mime_type_ma = '"application/vnd.nextthought.assessment.matchingpart"'
+        mime_type_ma_s = '"application/vnd.nextthought.assessment.multiplechoicemultipleanswerpart"'
 
         if not choices:
             raise ValueError('Choices[] cannot be empty.')
@@ -165,17 +170,15 @@ class ChoiceInteraction(object):
                 values[place] = value
 
         nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + self.identifier + '", ' \
-                   '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", "parts":[{"Class":' + \
-                   ('"MultipleChoiceMultipleAnswerPart"' if self.multiple_answer else '"MultipleChoicePart"') + ', ' \
-                   '"MimeType":' + (mime_type_mc_ma if self.multiple_answer else mime_type_mc) + ', "choices":['
+                   '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", "parts":[{"Class":' \
+                   '"MultipleChoiceMultipleAnswerPart, "MimeType":' + mime_type_ma + ', "choices":['
         while choices:
             if len(choices) is 1:
                 nti_json += choices.pop(0) + '], '
             else:
                 nti_json += choices.pop(0) + ', '
-        nti_json += '"content":"", "explanation":"", "hints":[], "solutions":[{"Class":' + \
-                    ('"MultipleChoiceMultipleAnswerSolution"' if self.multiple_answer else '"MultipleChoiceSolution"') \
-                    + ', "MimeType":' + (mime_type_mc_ma_s if self.multiple_answer else mime_type_mc_s) + ', "value":'
+        nti_json += '"content":"", "explanation":"", "hints":[], "solutions":[{"Class":' \
+                    '"MultipleChoiceMultipleAnswerSolution", "MimeType":' + mime_type_ma_s + ', "value":'
         if len(values) is 1:
             nti_json += values.pop(0) + ', '
         else:
@@ -189,8 +192,6 @@ class ChoiceInteraction(object):
 
         parsed = loads(nti_json)
 
-        nti_file = \
-            open('/NTI_Questions/' + ('MultipleChoiceMultipleAnswer' if self.multiple_answer else 'MultipleChoice') +
-                 'Part_Questions/' + self.title + '.json', 'w+', encoding="utf-8")
+        nti_file = open('/NTI_Questions/MatchingPart_Questions/' + self.title + '.json', 'w+', encoding="utf-8")
         nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
         nti_file.close()

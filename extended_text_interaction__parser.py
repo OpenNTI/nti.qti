@@ -16,12 +16,12 @@ class ExtendedTextInteraction(object):
         if type(identifier) is str:
             self.identifier = identifier
         else:
-            raise TypeError('Identifier needs to be a str type.')
+            raise TypeError('identifier needs to be a str type')
 
         if type(prompt) is str:
             self.prompt = prompt
         else:
-            raise TypeError('Prompt needs to be a str type.')
+            raise TypeError('prompt needs to be a str type')
 
         if type(title) is str:
             if not title:
@@ -29,15 +29,15 @@ class ExtendedTextInteraction(object):
             else:
                 self.title = title
         else:
-            raise TypeError('Title needs to be a str type.')
+            raise TypeError('title needs to be a str type')
 
         if not identifier:
-            raise ValueError('Identifier cannot be empty.')
+            raise ValueError('identifier cannot be empty')
 
         if not prompt:
-            raise ValueError('Prompt cannot be empty.')
+            raise ValueError('prompt cannot be empty')
 
-    def to_qti(self, time_dependent='false'):
+    def to_qti(self, adaptive='false', time_dependent='false'):
         assessment_item = Element('assessmentItem', {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                                      'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
                                                      'xsi:schemaLocation':
@@ -45,6 +45,7 @@ class ExtendedTextInteraction(object):
                                                          "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
                                                      'identifier': self.identifier,
                                                      'title': self.title,
+                                                     'adaptive': adaptive,
                                                      'timeDependent': time_dependent})
         response_declaration = SubElement(assessment_item, 'responseDeclaration',
                                           {'identifier': 'RESPONSE',
@@ -62,7 +63,7 @@ class ExtendedTextInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open(self.title + '.xml', 'w+', encoding="utf-8")
+        qti_file = open('/QTI_Questions/extendedTextInteractions_Questions/' + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -77,6 +78,6 @@ class ExtendedTextInteraction(object):
 
         parsed = loads(nti_json)
 
-        nti_file = open(self.title + '.json', 'w+', encoding="utf-8")
+        nti_file = open('/NTI_Questions/ModeledContentPart_Questions/' + self.title + '.json', 'w+', encoding="utf-8")
         nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
         nti_file.close()

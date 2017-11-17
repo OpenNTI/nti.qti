@@ -1,4 +1,4 @@
-from io import open
+from io import open as open_file
 
 from xml.dom.minidom import parseString
 
@@ -60,6 +60,6 @@ class TestCompiler(object):
         rough_string = tostring(assessment_test)
         reparsed = parseString(rough_string)
 
-        qti_file = open(self.title + '.xml', 'w+', encoding="utf-8")
+        qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()

@@ -1,10 +1,10 @@
-from choice_interaction__parser import ChoiceInteraction
-from extended_text_interaction__parser import ExtendedTextInteraction
+from parsers import ChoiceInteraction
+from parsers import ExtendedTextInteraction
 from match_interaction__parser import MatchInteraction
-from text_entry_interaction__parser import TextEntryInteraction
-from upload_interaction__parser import UploadInteraction
+from parsers import TextEntryInteraction
+from parsers import UploadInteraction
 
-from re import compile
+from re import compile as compile_pattern
 
 
 class NTICollector(object):
@@ -16,31 +16,31 @@ class NTICollector(object):
             raise TypeError('File name needs to be a str type.')
 
         class_re = '"Class": "(.+Part)",?'
-        self.class_pattern = compile(class_re)
+        self.class_pattern = compile_pattern(class_re)
 
         identifier_re = '"(NTIID|ntiid)": "(tag:.+_(.+)\.naq\.qid(\..+))",?'
-        self.identifier_pattern = compile(identifier_re)
+        self.identifier_pattern = compile_pattern(identifier_re)
 
         prompt_re = '"content": "(.*)",?'
-        self.prompt_pattern = compile(prompt_re)
+        self.prompt_pattern = compile_pattern(prompt_re)
 
         choice_re = '"<a name=.+>.*</a>.*<p class=.+id=.+>(.+)</p>"'
-        self.choice_pattern = compile(choice_re)
+        self.choice_pattern = compile_pattern(choice_re)
 
         pair_re = '"(\\d+)":( \\d+),?'
-        self.pair_pattern = compile(pair_re)
+        self.pair_pattern = compile_pattern(pair_re)
 
         value_mc__re = '"value": (\\d),?'
-        self.value_mc__pattern = compile(value_mc__re)
+        self.value_mc__pattern = compile_pattern(value_mc__re)
 
         value_mc_ma__re = '(\\d),?'
-        self.value_mc_ma__pattern = compile(value_mc_ma__re)
+        self.value_mc_ma__pattern = compile_pattern(value_mc_ma__re)
 
         value_fr__re = '"value": "(.+)",?'
-        self.value_fr__pattern = compile(value_fr__re)
+        self.value_fr__pattern = compile_pattern(value_fr__re)
 
         value_ma__re = '"(.+)",?'
-        self.value_ma__pattern = compile(value_ma__re)
+        self.value_ma__pattern = compile_pattern(value_ma__re)
 
         self.line_counter = 0
 
@@ -255,7 +255,7 @@ class NTICollector(object):
                 interaction.to_qti()
 
     def lines(self):
-        lines = 0
-        for line in open(self.file_name):
-            lines += 1
-        return lines
+        i = 0
+        for i, l in enumerate(open(self.file_name)):
+            pass
+        return i + 1

@@ -1,8 +1,3 @@
-from choice_interaction__parser import ChoiceInteraction
-from extended_text_interaction__parser import ExtendedTextInteraction
-from text_entry_interaction__parser import TextEntryInteraction
-from upload_interaction__parser import UploadInteraction
-
 from re import compile
 
 
@@ -157,7 +152,7 @@ class QTICollector(object):
                 interaction.to_qti()
 
     def lines(self):
-        lines = 0
-        for line in open(self.file_name):
-            lines += 1
-        return lines
+        i = 0
+        for i, l in enumerate(open(self.file_name)):
+            pass
+        return i + 1

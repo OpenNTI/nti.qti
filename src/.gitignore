@@ -2,8 +2,6 @@
 *.xml
 *.json
 
-.git/
-.idea/
-old/
+test.py
 
 *.DS_Store

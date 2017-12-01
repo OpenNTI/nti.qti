@@ -2,6 +2,9 @@
 *.xml
 *.json
 
+questions/
+
+new.py
 test.py
 
 *.DS_Store

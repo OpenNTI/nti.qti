@@ -1,5 +1,7 @@
 from io import open as open_file
 
+from os import listdir
+
 from xml.dom.minidom import parseString
 
 from xml.etree.ElementTree import Element
@@ -12,7 +14,7 @@ class TestCompiler(object):
         if type(identifier) is str:
             self.identifier = identifier
         else:
-            raise TypeError('Identifier needs to be a str type.')
+            raise TypeError('identifier needs to be a str type')
 
         if type(title) is str:
             if not title:
@@ -20,9 +22,15 @@ class TestCompiler(object):
             else:
                 self.title = title
         else:
-            raise TypeError('Title needs to be a str type.')
+            raise TypeError('title needs to be a str type')
 
-    def compile(self):
+    def compile(self, directory, max_score):
+        if type(directory) is not str:
+            raise TypeError('directory needs to be a str type')
+
+        if type(max_score) is not int:
+            raise TypeError('directory needs to be an int type')
+
         assessment_test = Element('assessmentTest', {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                                      'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
                                                      'xsi:schemaLocation':
@@ -41,7 +49,7 @@ class TestCompiler(object):
                                                                                             'baseType': 'float'})
         default_value__max_score = SubElement(outcome_declaration__max_score, 'defaultValue')
         value__max_score = SubElement(default_value__max_score, 'defaultValue')
-        value__max_score.text = str(1.0)
+        value__max_score.text = str(max_score)
         test_part = SubElement(assessment_test, 'testPart', {'identifier': "testpartID",
                                                              'navigationMode': "nonlinear",
                                                              'submissionMode': "individual"})
@@ -49,13 +57,16 @@ class TestCompiler(object):
                                                                          'fixed': "false",
                                                                          'title': "sectionTitle",
                                                                          'visible': "false"})
-        assessment_item_ref = SubElement(assessment_section, 'assessmentItemRef', {'identifier': "itemID",
-                                                                                   'href': "filename.xml",
-                                                                                   'fixed': "false"})
+        for filename in listdir(directory):
+            # assessment_item_ref
+            SubElement(assessment_section, 'assessmentItemRef', {'identifier': filename.replace('.xml', ''),
+                                                                 'href': filename,
+                                                                 'fixed': "false"})
         outcome_processing = SubElement(assessment_test, 'outcomeProcessing')
         set_outcome_value = SubElement(outcome_processing, 'setOutcomeValue', {'identifier': "SCORE"})
         sum_element = SubElement(set_outcome_value, 'sum')
-        test_variables = SubElement(sum_element, 'testVariable', {'variableIdentifier': "SCORE"})
+        # test_variables
+        SubElement(sum_element, 'testVariables', {'variableIdentifier': "SCORE"})
 
         rough_string = tostring(assessment_test)
         reparsed = parseString(rough_string)

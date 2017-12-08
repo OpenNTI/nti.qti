@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from io import open as open_file
 
+# noinspection PyUnresolvedReferences
 from itertools import product
 
 from json import dumps
@@ -226,8 +227,7 @@ class ExtendedTextInteraction(object):
         # outcome_declaration
         SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
                                                            'cardinality': 'single',
-                                                           'baseType': 'float',
-                                                           'externalScored': 'human'})
+                                                           'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
         extended_text_interaction = SubElement(item_body, 'extendedTextInteraction', {'responseIdentifier': 'RESPONSE'})
         prompt__sub_element = SubElement(extended_text_interaction, 'prompt')

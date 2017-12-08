@@ -126,18 +126,30 @@ class QTICollector(object):
                             temp_list_1 = []
                             temp_list_2 = []
 
-                            for index_i in range(len(self.label_solutions)):
-                                for index_j in range(len(self.label_identifiers)):
+                            index_i = 0
+                            index_j = 0
+                            index_k = 0
+                            index_l = 0
+                            index = 0
+
+                            for item_i in range(len(self.label_solutions)):
+                                for item_j in range(len(self.label_identifiers)):
                                     if self.label_solutions[index_i] is self.label_identifiers[index_j]:
                                         temp_list_1.append(str(index_j))
+                                    index_j += 1
+                                index_i += 1
 
-                            for index_k in range(len(self.value_solutions)):
-                                for index_l in range(len(self.value_identifiers)):
+                            for item_k in range(len(self.value_solutions)):
+                                for item_l in range(len(self.value_identifiers)):
                                     if self.value_solutions[index_k] is self.value_identifiers[index_l]:
                                         temp_list_2.append(str(index_l))
+                                    index_l += 1
+                                index_k += 1
 
-                            for index in range(len(temp_list_1)):
+                            for item in range(len(temp_list_1)):
                                 self.solutions.append(str(temp_list_1[index] + ' ' + temp_list_2[index]))
+                                index += 1
+                            print self.solutions
 
     def convert(self, qti, nti):
         if not self.questions:

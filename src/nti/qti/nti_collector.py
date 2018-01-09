@@ -18,7 +18,7 @@ class NTICollector(object):
         class_re = '"Class": "(.+Part)",?'
         self.class_pattern = compile_pattern(class_re)
 
-        identifier_re = '"(NTIID|ntiid)": "(tag:.+_(.+)\.naq\.qid(\..+))",?'
+        identifier_re = '"(NTIID|ntiid)": "(tag:.+_(.+)\.naq\.qid\.content(\..+))",?'
         self.identifier_pattern = compile_pattern(identifier_re)
 
         prompt_re = '"content": "(.*)",?'

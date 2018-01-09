@@ -45,7 +45,26 @@ class NTICollector(object):
 idiot = NTICollector('assessment_index.json')
 idiot.collect()
 
-data = ['text', 'foo2', 'foo1', 'sample']
-indeces = (i for i,val in enumerate(data) if match('foo', val))
+data = ['text', 'foo2', 'foo1', 'sample', 'foo']
+indexes = [i for i, val in enumerate(data) if 'foo' in val]
 
-print indeces('foo')
+print indexes
+
+def recursive_iter(obj):
+    if isinstance(obj, dict):
+        for item in obj.values():
+            for item in recursive_iter(item):
+                yield item
+    elif any(isinstance(obj, t) for t in (list, tuple)):
+        for item in obj:
+            for item in recursive_iter(item):
+                yield item
+    else:
+        yield obj
+
+data = load(open('assessment_index.json'))
+for item in recursive_iter(data):
+    print(item)
+
+listing = ['a', 'b', 'c', 'b']
+print listing.index('b')

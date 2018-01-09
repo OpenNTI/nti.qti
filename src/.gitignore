@@ -1,6 +1,7 @@
 *.py[cod]
 *.xml
 *.json
+*.txt
 
 questions/
 

@@ -1,4 +1,12 @@
-from re import compile
+from parsers import ChoiceInteraction
+from parsers import ExtendedTextInteraction
+from parsers import MatchInteraction
+from parsers import TextEntryInteraction
+from parsers import UploadInteraction
+
+from re import sub
+
+from xml.etree import ElementTree
 
 
 class QTICollector(object):
@@ -7,164 +15,131 @@ class QTICollector(object):
         if type(file_name) is str:
             self.file_name = file_name
         else:
-            raise TypeError('File name needs to be a str type.')
+            raise TypeError('file_name needs to be a str type')
 
-        all_re = '.+'
-        self.all_pattern = compile(all_re)
+        if not file_name.lower().endswith('.xml'):
+            raise TypeError('file_name must be a .xml file')
 
-        base_type__re = 'baseType="(.+)"'
-        self.base_type__pattern = compile(base_type__re)
+        tree = ElementTree.parse(file_name)
+        self.root = tree.getroot()
 
-        choice_re = '<simpleAssociableChoice.+identifier=(".+").*>(.+)</simpleAssociableChoice>'
-        self.choice_pattern = compile(choice_re)
+        self.ns = '{http://www.imsglobal.org/xsd/imsqti_v2p2}'
 
-        pair_re = '<value>(.+) (.+)</value>'
-        self.pair_pattern = compile(pair_re)
-
-        prompt_re = '<prompt>(.+)</prompt>'
-        self.prompt_pattern = compile(prompt_re)
-
-        value_re = '<value>(.+)</value>'
-        self.value_pattern = compile(value_re)
-
-        self.is__directed_pair = False
-        self.is_values = False
-
-        self.line_counter = 0
-        self.total_lines = self.lines()
-
-        self.base_type = ''
         self.identifier = ''
-        self.prompt = ''
         self.title = ''
-        self.value_single = ''
+        self.prompt = ''
 
-        self.choices = []
-        self.labels = []
-        self.label_identifiers = []
-        self.label_solutions = []
-        self.questions = []
-        self.solutions = []
         self.values = []
-        self.value_identifiers = []
-        self.value_solutions = []
+        self.labels = []
+        self.check_0 = []
+        self.check_1 = []
+        self.solutions = []
+        self.temp = []
+        self.choices = []
 
     def collect(self):
-        infile = open(self.file_name, 'r')
-        for line in infile:
-            self.line_counter += 1
+        self.identifier = self.root.attrib['identifier']
+        self.title = self.root.attrib['title']
 
-            if '<responseDeclaration' in line:
-                while '</responseDeclaration>' not in line:
-                    self.line_counter += 1
-                    line = next(infile)
+        if self.root.find(self.ns + 'itemBody').find(self.ns + 'choiceInteraction') is not None:
+            response_declaration = self.root.find(self.ns + 'responseDeclaration')
+            correct_response = response_declaration.find(self.ns + 'correctResponse')
+            for correct_value in correct_response:
+                self.temp.append(correct_value.text)
 
-                    matcher = self.base_type__pattern.search(line)
-                    if matcher is not None:
-                        self.base_type = matcher.group(1)
+            item_body = self.root.find(self.ns + 'itemBody')
+            choice_interaction = item_body.find(self.ns + 'choiceInteraction')
+            prompt = choice_interaction.find(self.ns + 'prompt')
+            self.prompt = prompt.text
 
-                    if '<correctResponse>' in line:
-                        while '</correctResponse>' not in line:
-                            self.line_counter += 1
-                            line = next(infile)
+            index = 0
+            for choice in choice_interaction.findall(self.ns + 'singleChoice'):
+                self.choices.append(choice.text)
+                if choice.attrib['identifier'] in self.temp:
+                    self.values.append(str(index))
+                index = index + 1
 
-                            matcher = self.value_pattern.search(line)
-                            if matcher is not None:
-                                if self.base_type is 'directedPair':
-                                    self.is__directed_pair = True
-                                    self.label_solutions.append(matcher.group(1))
-                                    self.value_solutions.append(matcher.group(2))
-                                else:
-                                    self.solutions.append(matcher.group(1))
+            choice_output = ChoiceInteraction(self.identifier, self.prompt, self.title, self.values, self.choices)
+            choice_output.to_nti()
 
-            if '<itemBody>' in line:
-                while '</itemBody>' not in line:
-                    self.line_counter += 1
-                    line = next(infile)
+        if self.root.find(self.ns + 'itemBody').find(self.ns + 'extendedTextInteraction') is not None:
+            item_body = self.root.find(self.ns + 'itemBody')
+            choice_interaction = item_body.find(self.ns + 'choiceInteraction')
+            prompt = choice_interaction.find(self.ns + 'prompt')
+            self.prompt = prompt.text
 
-                    if '<matchInteraction' in line:
-                        while '</matchInteraction>' not in line:
-                            self.line_counter += 1
-                            line = next(infile)
+            extended_output = ExtendedTextInteraction(self.identifier, self.prompt, self.title)
+            extended_output.to_nti()
 
-                            if '<prompt>' in line:
-                                while '</prompt>' not in line:
-                                    self.line_counter += 1
-                                    line = next(infile)
+        if self.root.find(self.ns + 'itemBody').find(self.ns + 'matchInteraction') is not None:
+            response_declaration = self.root.find(self.ns + 'responseDeclaration')
+            correct_response = response_declaration.find(self.ns + 'correctResponse')
 
-                                    matcher = self.prompt_pattern.search(line)
-                                    if matcher is not None:
-                                        self.prompt = str(matcher.group(1))
-                                    elif matcher is None:
-                                        matcher = self.all_pattern.search(line)
-                                        if matcher is not None:
-                                            self.prompt = str(matcher.group(0))
+            for value in correct_response:
+                string = value.text
+                modified_0 = sub('[^\w]', ' ', string).split()[0]
+                modified_1 = sub('[^\w]', ' ', string).split()[1]
+                self.values.append(modified_0)
+                self.labels.append(modified_1)
+                self.check_0.append(modified_0)
+                self.check_1.append(modified_1)
 
-                            if '<simpleMatchSet>' in line:
-                                if not self.is_values:
-                                    while '</simpleMatchSet>' not in line:
-                                        self.line_counter += 1
-                                        line = next(infile)
+            index = 0
+            num = 0
+            temp_0 = list(self.values)
+            for value in self.values:
+                if self.values[index] in self.values[:index]:
+                    temp_0[index] = self.values.index(value)
+                else:
+                    temp_0[index] = num
+                    num = num + 1
+                index = index + 1
+            self.values = list(temp_0)
 
-                                        matcher = self.choice_pattern.search(line)
-                                        if matcher is not None:
-                                            self.labels.append(str(matcher.group(2)))
-                                            self.label_identifiers.append(str(matcher.group(1)))
-                                    self.is_values = True
-                                elif self.is_values:
-                                    while '</simpleMatchSet>' not in line:
-                                        self.line_counter += 1
-                                        line = next(infile)
+            index = 0
+            num = 0
+            temp_1 = list(self.labels)
+            for label in self.labels:
+                if self.labels[index] in self.labels[:index]:
+                    temp_1[index] = self.labels.index(label)
+                else:
+                    temp_1[index] = num
+                    num = num + 1
+                index = index + 1
+            self.labels = list(temp_1)
 
-                                        matcher = self.choice_pattern.search(line)
-                                        if matcher is not None:
-                                            self.values.append(str(matcher.group(2)))
-                                            self.value_identifiers.append(str(matcher.group(1)))
-                                    self.is_values = False
+            for index in range(max(len(self.values), len(self.labels))):
+                self.solutions.append(str(self.values.pop(0)) + ' ' + str(self.labels.pop(0)))
 
-                        if self.is__directed_pair:
-                            temp_list_1 = []
-                            temp_list_2 = []
+            item_body = self.root.find(self.ns + 'itemBody')
+            match_interaction = item_body.find(self.ns + 'matchInteraction')
+            prompt = match_interaction.find(self.ns + 'prompt')
+            self.prompt = prompt.text
 
-                            index_i = 0
-                            index_j = 0
-                            index_k = 0
-                            index_l = 0
-                            index = 0
+            self.labels = []
+            self.values = []
+            for simple_match_set in match_interaction.findall(self.ns + 'simpleMatchSet'):
+                index = 0
+                for choice in simple_match_set:
+                    cai = choice.attrib['identifier']
+                    if cai in self.check_0:
+                        self.labels.insert(self.check_0.index(cai), choice.text)
+                    elif cai in self.check_1:
+                        self.values.insert(self.check_1.index(cai), choice.text)
+                    index = index + 1
 
-                            for item_i in range(len(self.label_solutions)):
-                                for item_j in range(len(self.label_identifiers)):
-                                    if self.label_solutions[index_i] is self.label_identifiers[index_j]:
-                                        temp_list_1.append(str(index_j))
-                                    index_j += 1
-                                index_i += 1
+            match_output = \
+                MatchInteraction(self.identifier, self.prompt, self.title, self.labels, self.solutions, self.values)
+            match_output.to_nti()
 
-                            for item_k in range(len(self.value_solutions)):
-                                for item_l in range(len(self.value_identifiers)):
-                                    if self.value_solutions[index_k] is self.value_identifiers[index_l]:
-                                        temp_list_2.append(str(index_l))
-                                    index_l += 1
-                                index_k += 1
+        if self.root.find(self.ns + 'itemBody').find(self.ns + 'uploadInteraction') is not None:
+            item_body = self.root.find(self.ns + 'itemBody')
+            upload_interaction = item_body.find(self.ns + 'uploadInteraction')
+            prompt = upload_interaction.find(self.ns + 'prompt')
+            self.prompt = prompt.text
 
-                            for item in range(len(temp_list_1)):
-                                self.solutions.append(str(temp_list_1[index] + ' ' + temp_list_2[index]))
-                                index += 1
-                            print self.solutions
+            upload_output = UploadInteraction(self.identifier, self.prompt, self.title)
+            upload_output.to_nti()
 
-    def convert(self, qti, nti):
-        if not self.questions:
-            raise ValueError('Questions[] cannot be empty')
-
-        if qti:
-            for interaction in self.questions:
-                interaction.to_qti()
-
-        if nti:
-            for interaction in self.questions:
-                interaction.to_qti()
-
-    def lines(self):
-        i = 0
-        for i, l in enumerate(open(self.file_name)):
-            pass
-        return i + 1
+        else:
+            raise NotImplementedError('there is no valid question type to convert')

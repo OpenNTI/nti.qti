@@ -9,6 +9,7 @@ from json import dumps
 from json import loads
 
 from re import compile as compile_pattern
+from re import sub
 from re import split
 
 from string import ascii_uppercase
@@ -499,6 +500,9 @@ class TextEntryInteraction(object):
             if type(values[0]) is not str:
                 raise TypeError('values[] can only contain str type items')
 
+        if self.math:
+            self.content = ''
+
     def to_qti(self, adaptive='false', time_dependent='false'):
         length = str(len(self.values))
         new_prompt = split('_+', self.prompt)
@@ -591,11 +595,16 @@ class TextEntryInteraction(object):
             mime_type_s_m = '"application/vnd.nextthought.assessment.symbolicmathpart"'
             mime_type_s_m_s = '"application/vnd.nextthought.assessment.latexsymbolicmathsolution"'
 
+            if compile_pattern('<a.*></a> ').match(self.prompt) is not None:
+                self.content = sub('<a.*></a> ', '', self.prompt)
+                self.prompt = compile_pattern('(<a.*></a>).*').match(self.prompt).group(1)
+
             nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + self.identifier + '", ' \
                        '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", ' \
                        '"parts":[{"Class":"SymbolicMathPart", "MimeType":' + mime_type_s_m + ', "allowed_units":[""], '\
-                       '"content":"", "explanation":"", "hints":[], "solutions":[{"Class":"LatexSymbolicMathSolution",'\
-                       ' "MimeType":' + mime_type_s_m_s + ', "allowed_units":[""], "value":"' + self.values + '", ' \
+                       '"content":"' + self.content + '","explanation":"", "hints":[], "solutions":[{"Class":' \
+                       '"LatexSymbolicMathSolution", "MimeType":' + mime_type_s_m_s + ', "allowed_units":[""], ' \
+                       '"value":"' + self.values + '", ' \
                        '"weight":1.0}]}]}'
 
             parsed = loads(nti_json)

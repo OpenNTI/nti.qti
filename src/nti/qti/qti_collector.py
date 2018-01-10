@@ -4,6 +4,7 @@ from parsers import MatchInteraction
 from parsers import TextEntryInteraction
 from parsers import UploadInteraction
 
+from re import compile
 from re import sub
 
 from xml.etree import ElementTree
@@ -25,9 +26,13 @@ class QTICollector(object):
 
         self.ns = '{http://www.imsglobal.org/xsd/imsqti_v2p2}'
 
+        if not self.root.tag.startswith(self.ns):
+            raise NotImplementedError('must use namespace ' + self.ns)
+
         self.identifier = ''
         self.title = ''
         self.prompt = ''
+        self.value_single = ''
 
         self.values = []
         self.labels = []
@@ -62,7 +67,7 @@ class QTICollector(object):
             choice_output = ChoiceInteraction(self.identifier, self.prompt, self.title, self.values, self.choices)
             choice_output.to_nti()
 
-        if self.root.find(self.ns + 'itemBody').find(self.ns + 'extendedTextInteraction') is not None:
+        elif self.root.find(self.ns + 'itemBody').find(self.ns + 'extendedTextInteraction') is not None:
             item_body = self.root.find(self.ns + 'itemBody')
             choice_interaction = item_body.find(self.ns + 'choiceInteraction')
             prompt = choice_interaction.find(self.ns + 'prompt')
@@ -71,7 +76,7 @@ class QTICollector(object):
             extended_output = ExtendedTextInteraction(self.identifier, self.prompt, self.title)
             extended_output.to_nti()
 
-        if self.root.find(self.ns + 'itemBody').find(self.ns + 'matchInteraction') is not None:
+        elif self.root.find(self.ns + 'itemBody').find(self.ns + 'matchInteraction') is not None:
             response_declaration = self.root.find(self.ns + 'responseDeclaration')
             correct_response = response_declaration.find(self.ns + 'correctResponse')
 
@@ -132,7 +137,42 @@ class QTICollector(object):
                 MatchInteraction(self.identifier, self.prompt, self.title, self.labels, self.solutions, self.values)
             match_output.to_nti()
 
-        if self.root.find(self.ns + 'itemBody').find(self.ns + 'uploadInteraction') is not None:
+        elif self.root.find(self.ns + 'itemBody').find(self.ns + 'p').find(self.ns + 'textEntryInteraction') is not None:
+            response_declaration = self.root.find(self.ns + 'responseDeclaration')
+            mapping = response_declaration.find(self.ns + 'mapping')
+            if mapping is not None:
+                for map_entry in mapping:
+                    self.values.append(map_entry.attrib['mapKey'])
+            else:
+                correct_response = response_declaration.find(self.ns + 'correctResponse')
+                correct_value = correct_response.find(self.ns + 'value')
+                self.value_single = correct_value.text
+                try:
+                    float(self.value_single)
+                except ValueError:
+                    self.values.append(self.value_single)
+
+            item_body = self.root.find(self.ns + 'itemBody')
+            prompt = item_body.find(self.ns + 'p')
+            text_interaction = prompt.find(self.ns + 'textEntryInteraction')
+            length = int(text_interaction.attrib['expectedLength'])
+            if compile('\\n\s{6}').match(prompt.text) is not None and self.values:
+                self.prompt = sub('\\n\s{6}', '' , prompt.text) + '_' * length + '.'
+            elif compile('\\n\s{6}').match(prompt.text) is not None and not self.values:
+                self.prompt = sub('\\n\s{6}', '' , prompt.text)
+            else:
+                raise NotImplementedError('sorry')
+
+            if self.values:
+                text_output = TextEntryInteraction(self.identifier, self.prompt, self.title, self.values)
+                text_output.to_nti()
+            elif not self.values:
+                math_output = TextEntryInteraction(self.identifier, self.prompt, self.title, self.value_single, True)
+                math_output.to_nti()
+            else:
+                raise ZeroDivisionError('something is not right')
+
+        elif self.root.find(self.ns + 'itemBody').find(self.ns + 'uploadInteraction') is not None:
             item_body = self.root.find(self.ns + 'itemBody')
             upload_interaction = item_body.find(self.ns + 'uploadInteraction')
             prompt = upload_interaction.find(self.ns + 'prompt')
@@ -143,3 +183,7 @@ class QTICollector(object):
 
         else:
             raise NotImplementedError('there is no valid question type to convert')
+
+
+mom = QTICollector('TestCourse.math.1.xml')
+mom.collect()

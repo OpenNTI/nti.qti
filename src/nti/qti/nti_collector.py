@@ -15,6 +15,9 @@ class NTICollector(object):
         else:
             raise TypeError('File name needs to be a str type.')
 
+        if not file_name.lower().endswith('.json'):
+            raise TypeError('file_name must be a .json file')
+
         class_re = '"Class": "(.+Part)",?'
         self.class_pattern = compile_pattern(class_re)
 
@@ -259,3 +262,8 @@ class NTICollector(object):
         for i, l in enumerate(open(self.file_name)):
             pass
         return i + 1
+
+
+mom = NTICollector('dumb.json')
+mom.collect()
+mom.convert(True, False)

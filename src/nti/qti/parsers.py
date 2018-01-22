@@ -266,6 +266,147 @@ class ExtendedTextInteraction(object):
         nti_file.close()
 
 
+# NOT USABLE
+class InlineChoiceInteraction(object):
+
+    def __init__(self, identifier, prompt, title, wordbank, solutions):
+        if isinstance(identifier, str):
+            self.identifier = identifier
+        else:
+            raise TypeError('identifier needs to be a str type')
+
+        if isinstance(prompt, str):
+            self.prompt = prompt
+        else:
+            raise TypeError('prompt needs to be a str type')
+
+        if isinstance(title, str):
+            if not title:
+                self.title = identifier
+            else:
+                self.title = title
+        else:
+            raise TypeError('title needs to be a str type')
+
+        if isinstance(wordbank, list):
+            self.wordbank = wordbank
+        else:
+            raise TypeError('labels[] needs to be a list type')
+
+        if isinstance(solutions, list):
+            self.solutions = solutions
+        else:
+            raise TypeError('solutions[] needs to be a list type')
+
+        if not identifier:
+            raise ValueError('identifier cannot be empty')
+
+        if not prompt:
+            raise ValueError('prompt cannot be empty')
+
+        if not wordbank:
+            raise ValueError('wordbank[] cannot be empty')
+
+        if not solutions:
+            raise ValueError('solutions[] cannot be empty')
+
+        self.char = self.dictionary(1)
+        self.double_char = self.dictionary(2)
+
+    def to_qti(self, adaptive='false', time_dependent='false', shuffle='false'):
+        wordbank = deepcopy(self.wordbank)
+        solutions = deepcopy(self.solutions)
+
+        if not wordbank:
+            raise ValueError('wordbank[] cannot be empty')
+
+        if not solutions:
+            raise ValueError('solutions[] cannot be empty')
+
+        assessment_item = Element('assessmentItem',
+                                  {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
+                                   'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
+                                   'xsi:schemaLocation':
+                                       "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                       "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                   'identifier': self.identifier,
+                                   'title': self.title,
+                                   'adaptive': adaptive,
+                                   'timeDependent': time_dependent})
+        # outcome_declaration
+        SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
+                                                           'cardinality': 'single',
+                                                           'baseType': 'float'})
+        item_body = SubElement(assessment_item, 'itemBody')
+        match_interaction = SubElement(item_body, 'matchInteraction', {'responseIdentifier':
+                                                                       'RESPONSE',
+                                                                       'shuffle': shuffle,
+                                                                       'maxAssociations': '0'})
+        prompt__sub_element = SubElement(match_interaction, 'prompt')
+        prompt__sub_element.text = self.prompt
+        simple_match_set_1 = SubElement(match_interaction, 'simpleMatchSet')
+        identifier = 0
+        while wordbank:
+            simple_associable_choice = SubElement(simple_match_set_1, 'simpleAssociableChoice',
+                                                  {'identifier': self.char[str(identifier)],
+                                                   'matchMax': '1'})
+            simple_associable_choice.text = wordbank.pop(0)
+            identifier += 1
+        # response_processing
+        SubElement(assessment_item, 'responseProcessing',
+                   {'template':
+                    "http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct"})
+
+        rough_string = tostring(assessment_item)
+        reparsed = parseString(rough_string)
+
+        qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        qti_file.write(reparsed.toprettyxml(indent="  "))
+        qti_file.close()
+
+    def to_nti(self):
+        wordbank = deepcopy(self.wordbank)
+        solutions = deepcopy(self.solutions)
+
+        mime_type_q = '"application/vnd.nextthought.naquestion"'
+        mime_type_ma = '"application/vnd.nextthought.assessment.matchingpart"'
+        mime_type_ma_s = '"application/vnd.nextthought.assessment.matchingsolution"'
+
+        if not wordbank:
+            raise ValueError('wordbank[] cannot be empty')
+
+        if not solutions:
+            raise ValueError('solutions[] cannot be empty')
+
+        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + \
+                   self.identifier + '", "content":"' + self.prompt + '", "ntiid":"' + \
+                   self.identifier + '", "parts":[{"Class":"MatchingPart", "MimeType":' + \
+                   mime_type_ma + ', "content":"", "explanation":"", "hints":[], "labels":["'
+        while wordbank:
+            if len(wordbank) is 1:
+                nti_json += wordbank.pop(0) + '"], '
+            else:
+                nti_json += wordbank.pop(0) + '", "'
+        nti_json += \
+            '"solutions":[{"Class":"MatchingSolution", "MimeType":' + mime_type_ma_s + ', "value":{'
+        nti_json += '"weight":1.0}], "values":["'
+
+        parsed = loads(nti_json)
+
+        nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
+        nti_file.close()
+
+    @staticmethod
+    def dictionary(size):
+        if size < 1:
+            raise ValueError('size must be greater than 0')
+        pre_dict = []
+        for char in product(ascii_uppercase, repeat=size):
+            pre_dict.append("".join(char))
+        return dict(zip(map(str, range(26 ** size)), pre_dict))
+
+
 class MatchInteraction(object):
 
     def __init__(self, identifier, prompt, title, labels, solutions, values):

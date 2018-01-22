@@ -24,17 +24,17 @@ from xml.etree.ElementTree import tostring
 class ChoiceInteraction(object):
 
     def __init__(self, identifier, prompt, title, values, choices):
-        if type(identifier) is str:
+        if isinstance(identifier, str):
             self.identifier = identifier
         else:
             raise TypeError('identifier needs to be a str type')
 
-        if type(prompt) is str:
+        if isinstance(prompt, str):
             self.prompt = prompt
         else:
             raise TypeError('prompt needs to be a str type')
 
-        if type(title) is str:
+        if isinstance(title, str):
             if not title:
                 self.title = identifier
             else:
@@ -42,12 +42,12 @@ class ChoiceInteraction(object):
         else:
             raise TypeError('title needs to be a str type')
 
-        if type(values) is list:
+        if isinstance(values, list):
             self.values = values
         else:
             raise TypeError('values[] needs to be a list type')
 
-        if type(choices) is list:
+        if isinstance(choices, list):
             self.choices = choices
         else:
             raise TypeError('choices[] needs to be a list type')
@@ -58,10 +58,10 @@ class ChoiceInteraction(object):
         if not prompt:
             raise ValueError('prompt cannot be empty')
 
-        if type(values[0]) is not str:
+        if not isinstance(values[0], str):
             raise TypeError('values[] can only contain str type items')
 
-        if type(choices[0]) is not str:
+        if not isinstance(choices[0], str):
             raise TypeError('choices[] can only contain str type items')
 
         if len(values) > 1:
@@ -86,15 +86,16 @@ class ChoiceInteraction(object):
         if not values:
             raise ValueError('values[] cannot be empty')
 
-        assessment_item = Element('assessmentItem', {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
-                                                     'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
-                                                     'xsi:schemaLocation':
-                                                         "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                                         "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
-                                                     'identifier': self.identifier,
-                                                     'title': self.title,
-                                                     'adaptive': adaptive,
-                                                     'timeDependent': time_dependent})
+        assessment_item = Element('assessmentItem',
+                                  {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
+                                   'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
+                                   'xsi:schemaLocation':
+                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                   'identifier': self.identifier,
+                                   'title': self.title,
+                                   'adaptive': adaptive,
+                                   'timeDependent': time_dependent})
         response_declaration = SubElement(assessment_item, 'responseDeclaration',
                                           {'identifier': 'RESPONSE',
                                            'cardinality':
@@ -109,21 +110,22 @@ class ChoiceInteraction(object):
                                                            'cardinality': 'single',
                                                            'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
-        choice_interaction = SubElement(item_body, 'choiceInteraction', {'responseIdentifier': 'RESPONSE',
-                                                                         'shuffle': shuffle,
-                                                                         'maxChoices':
-                                                                             '0' if self.multiple_answer else '1'})
+        choice_interaction = SubElement(item_body, 'choiceInteraction',
+                                        {'responseIdentifier': 'RESPONSE',
+                                         'shuffle': shuffle,
+                                         'maxChoices': '0' if self.multiple_answer else '1'})
         prompt__sub_element = SubElement(choice_interaction, 'prompt')
         prompt__sub_element.text = self.prompt
         identifier = 0
         while choices:
-            simple_choice = SubElement(choice_interaction, 'simpleChoice', {'identifier':
-                                                                            str(self.char[str(identifier)])})
+            simple_choice = SubElement(choice_interaction, 'simpleChoice',
+                                       {'identifier': str(self.char[str(identifier)])})
             simple_choice.text = choices.pop(0)
             identifier += 1
         # response_processing
         SubElement(assessment_item, 'responseProcessing',
-                   {'template': "http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct"})
+                   {'template':
+                    "http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct"})
 
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
@@ -138,9 +140,11 @@ class ChoiceInteraction(object):
 
         mime_type_q = '"application/vnd.nextthought.naquestion"'
         mime_type_mc = '"application/vnd.nextthought.assessment.multiplechoicepart"'
-        mime_type_mc_ma = '"application/vnd.nextthought.assessment.multiplechoicemultipleanswerpart"'
+        mime_type_mc_ma = \
+            '"application/vnd.nextthought.assessment.multiplechoicemultipleanswerpart"'
         mime_type_mc_s = '"application/vnd.nextthought.assessment.multiplechoicesolution"'
-        mime_type_mc_ma_s = '"application/vnd.nextthought.assessment.multiplechoicemultipleanswersolution"'
+        mime_type_mc_ma_s = \
+            '"application/vnd.nextthought.assessment.multiplechoicemultipleanswersolution"'
 
         if not choices:
             raise ValueError('choices[] cannot be empty')
@@ -148,23 +152,26 @@ class ChoiceInteraction(object):
         if not values:
             raise ValueError('values[] cannot be empty')
 
-        if type(int(values[0])) is not int:
+        if not isinstance(int(values[0]), int):
             for place, value in enumerate(values):
                 value = str(self.char.keys()[self.char.values().index(values[place])])
                 values[place] = value
 
-        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + self.identifier + '", ' \
-                   '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", "parts":[{"Class":' + \
-                   ('"MultipleChoiceMultipleAnswerPart"' if self.multiple_answer else '"MultipleChoicePart"') + ', ' \
-                   '"MimeType":' + (mime_type_mc_ma if self.multiple_answer else mime_type_mc) + ', "choices":["'
+        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + \
+                   self.identifier + '", "content":"' + self.prompt + '", "ntiid":"' + \
+                   self.identifier + '", "parts":[{"Class":' + \
+                   ('"MultipleChoiceMultipleAnswerPart"' if self.multiple_answer
+                    else '"MultipleChoicePart"') + ', "MimeType":' + \
+                   (mime_type_mc_ma if self.multiple_answer else mime_type_mc) + ', "choices":["'
         while choices:
             if len(choices) is 1:
                 nti_json += choices.pop(0) + '"], '
             else:
                 nti_json += choices.pop(0) + '", "'
         nti_json += '"content":"", "explanation":"", "hints":[], "solutions":[{"Class":' + \
-                    ('"MultipleChoiceMultipleAnswerSolution"' if self.multiple_answer else '"MultipleChoiceSolution"') \
-                    + ', "MimeType":' + (mime_type_mc_ma_s if self.multiple_answer else mime_type_mc_s) + ', "value":'
+                    ('"MultipleChoiceMultipleAnswerSolution"' if self.multiple_answer
+                     else '"MultipleChoiceSolution"') + ', "MimeType":' + \
+                    (mime_type_mc_ma_s if self.multiple_answer else mime_type_mc_s) + ', "value":'
         if len(values) is 1:
             nti_json += values.pop(0) + ', '
         else:
@@ -186,17 +193,17 @@ class ChoiceInteraction(object):
 class ExtendedTextInteraction(object):
 
     def __init__(self, identifier, prompt, title):
-        if type(identifier) is str:
+        if isinstance(identifier, str):
             self.identifier = identifier
         else:
             raise TypeError('identifier needs to be a str type')
 
-        if type(prompt) is str:
+        if isinstance(prompt, str):
             self.prompt = prompt
         else:
             raise TypeError('prompt needs to be a str type')
 
-        if type(title) is str:
+        if isinstance(title, str):
             if not title:
                 self.title = identifier
             else:
@@ -211,26 +218,27 @@ class ExtendedTextInteraction(object):
             raise ValueError('prompt cannot be empty')
 
     def to_qti(self, adaptive='false', time_dependent='false'):
-        assessment_item = Element('assessmentItem', {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
-                                                     'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
-                                                     'xsi:schemaLocation':
-                                                         "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                                         "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
-                                                     'identifier': self.identifier,
-                                                     'title': self.title,
-                                                     'adaptive': adaptive,
-                                                     'timeDependent': time_dependent})
+        assessment_item = Element('assessmentItem',
+                                  {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
+                                   'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
+                                   'xsi:schemaLocation':
+                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                   'identifier': self.identifier,
+                                   'title': self.title,
+                                   'adaptive': adaptive,
+                                   'timeDependent': time_dependent})
         # response_declaration
-        SubElement(assessment_item, 'responseDeclaration',
-                                    {'identifier': 'RESPONSE',
-                                     'cardinality': 'single',
-                                     'baseType': 'string'})
+        SubElement(assessment_item, 'responseDeclaration', {'identifier': 'RESPONSE',
+                                                            'cardinality': 'single',
+                                                            'baseType': 'string'})
         # outcome_declaration
         SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
                                                            'cardinality': 'single',
                                                            'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
-        extended_text_interaction = SubElement(item_body, 'extendedTextInteraction', {'responseIdentifier': 'RESPONSE'})
+        extended_text_interaction = SubElement(item_body, 'extendedTextInteraction',
+                                               {'responseIdentifier': 'RESPONSE'})
         prompt__sub_element = SubElement(extended_text_interaction, 'prompt')
         prompt__sub_element.text = self.prompt
 
@@ -245,10 +253,11 @@ class ExtendedTextInteraction(object):
         mime_type_q = '"application/vnd.nextthought.naquestion"'
         mime_type_model = '"application/vnd.nextthought.assessment.modeledcontentpart"'
 
-        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + self.identifier + '", ' \
-                   '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", ' \
-                   '"parts":[{"Class":"ModeledContentPart", "MimeType":' + mime_type_model + ', "content":"", ' \
-                   '"explanation":"", "hints":[], "solutions":[]}]}'
+        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + \
+                   self.identifier + '", "content":"' + self.prompt + '", "ntiid":"' + \
+                   self.identifier + '", "parts":[{"Class":"ModeledContentPart", "MimeType":' + \
+                   mime_type_model + ', "content":"", "explanation":"", "hints":[], ' \
+                   '"solutions":[]}]}'
 
         parsed = loads(nti_json)
 
@@ -260,17 +269,17 @@ class ExtendedTextInteraction(object):
 class MatchInteraction(object):
 
     def __init__(self, identifier, prompt, title, labels, solutions, values):
-        if type(identifier) is str:
+        if isinstance(identifier, str):
             self.identifier = identifier
         else:
             raise TypeError('identifier needs to be a str type')
 
-        if type(prompt) is str:
+        if isinstance(prompt, str):
             self.prompt = prompt
         else:
             raise TypeError('prompt needs to be a str type')
 
-        if type(title) is str:
+        if isinstance(title, str):
             if not title:
                 self.title = identifier
             else:
@@ -278,17 +287,17 @@ class MatchInteraction(object):
         else:
             raise TypeError('title needs to be a str type')
 
-        if type(labels) is list:
+        if isinstance(labels, list):
             self.labels = labels
         else:
             raise TypeError('labels[] needs to be a list type')
 
-        if type(solutions) is list:
+        if isinstance(solutions, list):
             self.solutions = solutions
         else:
             raise TypeError('solutions[] needs to be a list type')
 
-        if type(values) is list:
+        if isinstance(values, list):
             self.values = values
         else:
             raise TypeError('values[] needs to be a list type')
@@ -330,15 +339,16 @@ class MatchInteraction(object):
         if not values:
             raise ValueError('values[] cannot be empty')
 
-        assessment_item = Element('assessmentItem', {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
-                                                     'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
-                                                     'xsi:schemaLocation':
-                                                         "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                                         "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
-                                                     'identifier': self.identifier,
-                                                     'title': self.title,
-                                                     'adaptive': adaptive,
-                                                     'timeDependent': time_dependent})
+        assessment_item = Element('assessmentItem',
+                                  {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
+                                   'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
+                                   'xsi:schemaLocation':
+                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                   'identifier': self.identifier,
+                                   'title': self.title,
+                                   'adaptive': adaptive,
+                                   'timeDependent': time_dependent})
         response_declaration = SubElement(assessment_item, 'responseDeclaration',
                                           {'identifier': 'RESPONSE',
                                            'cardinality': 'multiple',
@@ -347,15 +357,16 @@ class MatchInteraction(object):
         while solutions:
             matcher = self.solution_pattern.search(solutions[0])
             correct_response_value = SubElement(correct_response, 'value')
-            correct_response_value.text = \
-                str(self.char[str(matcher.group(1))] + ' ' + self.double_char[str(matcher.group(2))])
+            correct_response_value.text = str(self.char[str(matcher.group(1))] + ' ' +
+                                              self.double_char[str(matcher.group(2))])
             solutions.pop(0)
         # outcome_declaration
         SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
                                                            'cardinality': 'single',
                                                            'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
-        match_interaction = SubElement(item_body, 'matchInteraction', {'responseIdentifier': 'RESPONSE',
+        match_interaction = SubElement(item_body, 'matchInteraction', {'responseIdentifier':
+                                                                       'RESPONSE',
                                                                        'shuffle': shuffle,
                                                                        'maxAssociations': '0'})
         prompt__sub_element = SubElement(match_interaction, 'prompt')
@@ -379,7 +390,7 @@ class MatchInteraction(object):
         # response_processing
         SubElement(assessment_item, 'responseProcessing',
                    {'template':
-                       "http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct"})
+                    "http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct"})
 
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
@@ -406,16 +417,17 @@ class MatchInteraction(object):
         if not values:
             raise ValueError('values[] cannot be empty')
 
-        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + self.identifier + '", ' \
-                   '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", "parts":[{"Class":' \
-                   '"MatchingPart", "MimeType":' + mime_type_ma + ', "content":"", "explanation":"", "hints":[],' \
-                   '"labels":["'
+        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + \
+                   self.identifier + '", "content":"' + self.prompt + '", "ntiid":"' + \
+                   self.identifier + '", "parts":[{"Class":"MatchingPart", "MimeType":' + \
+                   mime_type_ma + ', "content":"", "explanation":"", "hints":[], "labels":["'
         while labels:
             if len(labels) is 1:
                 nti_json += labels.pop(0) + '"], '
             else:
                 nti_json += labels.pop(0) + '", "'
-        nti_json += '"solutions":[{"Class":"MatchingSolution", "MimeType":' + mime_type_ma_s + ', "value":{'
+        nti_json += \
+            '"solutions":[{"Class":"MatchingSolution", "MimeType":' + mime_type_ma_s + ', "value":{'
         while solutions:
             matcher = self.solution_pattern.search(solutions[0])
             if len(solutions) is 1:
@@ -441,25 +453,25 @@ class MatchInteraction(object):
         if size < 1:
             raise ValueError('size must be greater than 0')
         pre_dict = []
-        for s in product(ascii_uppercase, repeat=size):
-            pre_dict.append("".join(s))
+        for char in product(ascii_uppercase, repeat=size):
+            pre_dict.append("".join(char))
         return dict(zip(map(str, range(26 ** size)), pre_dict))
 
 
 class TextEntryInteraction(object):
 
     def __init__(self, identifier, prompt, title, values, math=False):
-        if type(identifier) is str:
+        if isinstance(identifier, str):
             self.identifier = identifier
         else:
             raise TypeError('identifier needs to be a str type')
 
-        if type(prompt) is str:
+        if isinstance(prompt, str):
             self.prompt = prompt
         else:
             raise TypeError('prompt needs to be a str type')
 
-        if type(title) is str:
+        if isinstance(title, str):
             if not title:
                 self.title = identifier
             else:
@@ -467,18 +479,18 @@ class TextEntryInteraction(object):
         else:
             raise TypeError('title needs to be a str type')
 
-        if type(math) is bool:
+        if isinstance(math, bool):
             self.math = math
         else:
             raise TypeError('math needs to be a bool type')
 
         if not self.math:
-            if type(values) is list:
+            if isinstance(values, list):
                 self.values = values
             else:
                 raise TypeError('values[] needs to be a list type')
         if self.math:
-            if type(values) is str:
+            if isinstance(values, str):
                 self.values = values
             else:
                 raise TypeError('values needs to be a str type')
@@ -497,7 +509,7 @@ class TextEntryInteraction(object):
                 raise ValueError('values cannot be empty')
 
         if not self.math:
-            if type(values[0]) is not str:
+            if not isinstance(values[0], str):
                 raise TypeError('values[] can only contain str type items')
 
         if self.math:
@@ -511,15 +523,16 @@ class TextEntryInteraction(object):
         if not self.math:
             length = str(self.prompt.count('_'))
 
-        assessment_item = Element('assessmentItem', {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
-                                                     'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
-                                                     'xsi:schemaLocation':
-                                                         "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                                         "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
-                                                     'identifier': self.identifier,
-                                                     'title': self.title,
-                                                     'adaptive': adaptive,
-                                                     'timeDependent': time_dependent})
+        assessment_item = Element('assessmentItem',
+                                  {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
+                                   'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
+                                   'xsi:schemaLocation':
+                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                   'identifier': self.identifier,
+                                   'title': self.title,
+                                   'adaptive': adaptive,
+                                   'timeDependent': time_dependent})
         response_declaration = SubElement(assessment_item, 'responseDeclaration',
                                           {'identifier': 'RESPONSE',
                                            'cardinality': 'single',
@@ -539,23 +552,26 @@ class TextEntryInteraction(object):
                                                            'cardinality': 'single',
                                                            'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
-        p = SubElement(item_body, 'p')
+        prompt = SubElement(item_body, 'p')
         if not self.math:
-            p.text = new_prompt.pop(0)
+            prompt.text = new_prompt.pop(0)
         if self.math:
-            p.text = self.prompt
-        text_entry_interaction = SubElement(p, 'textEntryInteraction', {'responseIdentifier': 'RESPONSE',
-                                                                        'expectedLength': length})
+            prompt.text = self.prompt
+        text_entry_interaction = SubElement(prompt, 'textEntryInteraction',
+                                            {'responseIdentifier': 'RESPONSE',
+                                             'expectedLength': length})
         if not self.math and new_prompt:
             text_entry_interaction.tail = new_prompt.pop(0)
         if not self.math:
             # response_processing
             SubElement(assessment_item, 'responseProcessing',
-                       {'template': 'http://www.imsglobal.org/question/qti_v2p2/rptemplates/map_response'})
+                       {'template':
+                        'http://www.imsglobal.org/question/qti_v2p2/rptemplates/map_response'})
         if self.math:
             # response_processing
             SubElement(assessment_item, 'responseProcessing',
-                       {'template': 'http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct'})
+                       {'template':
+                        'http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct'})
 
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
@@ -572,17 +588,17 @@ class TextEntryInteraction(object):
             mime_type_f = '"application/vnd.nextthought.assessment.freeresponsepart"'
             mime_type_f_s = '"application/vnd.nextthought.assessment.freeresponsesolution"'
 
-            nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + self.identifier + '", ' \
-                       '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", ' \
-                       '"parts":[{"Class":"FreeResponsePart", "MimeType":' + mime_type_f + ', "content":"", ' \
-                       '"explanation":"", "hints":[], "solutions":['
+            nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + \
+                       self.identifier + '", "content":"' + self.prompt + '", "ntiid":"' + \
+                       self.identifier + '", "parts":[{"Class":"FreeResponsePart", "MimeType":' + \
+                       mime_type_f + ', "content":"", "explanation":"", "hints":[], "solutions":['
             while values:
                 if len(values) == 1:
-                    nti_json += '{"Class":"FreeResponseSolution", "MimeType":' + mime_type_f_s + ', "value":"'\
-                                + values.pop(0) + '", "weight":1.0}]}]}'
+                    nti_json += '{"Class":"FreeResponseSolution", "MimeType":' + mime_type_f_s + \
+                                ', "value":"' + values.pop(0) + '", "weight":1.0}]}]}'
                 else:
-                    nti_json += '{"Class":"FreeResponseSolution", "MimeType":' + mime_type_f_s + ', "value":"' \
-                                + values.pop(0) + '", "weight":1.0},'
+                    nti_json += '{"Class":"FreeResponseSolution", "MimeType":' + mime_type_f_s + \
+                                ', "value":"' + values.pop(0) + '", "weight":1.0},'
 
             parsed = loads(nti_json)
 
@@ -599,13 +615,13 @@ class TextEntryInteraction(object):
                 self.content = sub('<a.*></a> ', '', self.prompt)
                 self.prompt = compile_pattern('(<a.*></a>).*').match(self.prompt).group(1)
 
-            nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + self.identifier + '", ' \
-                       '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", ' \
-                       '"parts":[{"Class":"SymbolicMathPart", "MimeType":' + mime_type_s_m + ', "allowed_units":[""], '\
-                       '"content":"' + self.content + '","explanation":"", "hints":[], "solutions":[{"Class":' \
-                       '"LatexSymbolicMathSolution", "MimeType":' + mime_type_s_m_s + ', "allowed_units":[""], ' \
-                       '"value":"' + self.values + '", ' \
-                       '"weight":1.0}]}]}'
+            nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + \
+                       self.identifier + '", "content":"' + self.prompt + '", "ntiid":"' + \
+                       self.identifier + '", "parts":[{"Class":"SymbolicMathPart", "MimeType":' + \
+                       mime_type_s_m + ', "allowed_units":[""], "content":"' + self.content + \
+                       '","explanation":"", "hints":[], "solutions":[{"Class":' \
+                       '"LatexSymbolicMathSolution", "MimeType":' + mime_type_s_m_s + ', ' \
+                       '"allowed_units":[""], "value":"' + self.values + '", "weight":1.0}]}]}'
 
             parsed = loads(nti_json)
 
@@ -617,17 +633,17 @@ class TextEntryInteraction(object):
 class UploadInteraction(object):
 
     def __init__(self, identifier, prompt, title):
-        if type(identifier) is str:
+        if isinstance(identifier, str):
             self.identifier = identifier
         else:
             raise TypeError('identifier needs to be a str type')
 
-        if type(prompt) is str:
+        if isinstance(prompt, str):
             self.prompt = prompt
         else:
             raise TypeError('prompt needs to be a str type')
 
-        if type(title) is str:
+        if isinstance(title, str):
             if not title:
                 self.title = identifier
             else:
@@ -642,26 +658,27 @@ class UploadInteraction(object):
             raise ValueError('prompt cannot be empty')
 
     def to_qti(self, adaptive='false', time_dependent='false'):
-        assessment_item = Element('assessmentItem', {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
-                                                     'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
-                                                     'xsi:schemaLocation':
-                                                         "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                                         "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
-                                                     'identifier': self.identifier,
-                                                     'title': self.title,
-                                                     'adaptive': adaptive,
-                                                     'timeDependent': time_dependent})
+        assessment_item = Element('assessmentItem',
+                                  {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
+                                   'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
+                                   'xsi:schemaLocation':
+                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                   'identifier': self.identifier,
+                                   'title': self.title,
+                                   'adaptive': adaptive,
+                                   'timeDependent': time_dependent})
         # response_declaration
-        SubElement(assessment_item, 'responseDeclaration',
-                                    {'identifier': 'RESPONSE',
-                                     'cardinality': 'single',
-                                     'baseType': 'file'})
+        SubElement(assessment_item, 'responseDeclaration', {'identifier': 'RESPONSE',
+                                                            'cardinality': 'single',
+                                                            'baseType': 'file'})
         # outcome_declaration
         SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
                                                            'cardinality': 'single',
                                                            'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
-        upload_interaction = SubElement(item_body, 'uploadInteraction', {'responseIdentifier': 'RESPONSE'})
+        upload_interaction = SubElement(item_body, 'uploadInteraction', {'responseIdentifier':
+                                                                         'RESPONSE'})
         prompt__sub_element = SubElement(upload_interaction, 'prompt')
         prompt__sub_element.text = self.prompt
 
@@ -676,11 +693,12 @@ class UploadInteraction(object):
         mime_type_q = '"application/vnd.nextthought.naquestion"'
         mime_type_f = '"application/vnd.nextthought.assessment.filepart"'
 
-        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + self.identifier + '", ' \
-                   '"content":"' + self.prompt + '", "ntiid":"' + self.identifier + '", ' \
-                   '"parts":[{"Class":"FilePart", "MimeType":' + mime_type_f + ', ' \
-                   '"allowed_extensions":[".docx", ".pdf"], "allowed_mime_types":["*/*"], "content":"", ' \
-                   '"explanation":"", "hints":[], "max_file_size":10485760, "solutions":[]}]}'
+        nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + \
+                   self.identifier + '", "content":"' + self.prompt + '", "ntiid":"' + \
+                   self.identifier + '", "parts":[{"Class":"FilePart", "MimeType":' + \
+                   mime_type_f + ', "allowed_extensions":[".docx", ".pdf"], ' \
+                   '"allowed_mime_types":["*/*"], "content":"", "explanation":"", "hints":[], ' \
+                   '"max_file_size":10485760, "solutions":[]}]}'
 
         parsed = loads(nti_json)
 

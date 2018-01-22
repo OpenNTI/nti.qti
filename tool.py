@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import argparse
 
-parser = argparse.ArgumentParser(prog='idiots', description='Process some integers.')
-parser.add_argument('integers', metavar='N', type=int, nargs='+',
+PARSER = argparse.ArgumentParser(prog='idiots', description='Process some integers.')
+PARSER.add_argument('integers', metavar='N', type=int, nargs='+',
                     help='an integer for the accumulator')
-parser.add_argument('--sum', dest='accumulate', action='store_const',
+PARSER.add_argument('--sum', dest='accumulate', action='store_const',
                     const=sum, default=max,
                     help='sum the integers (default: find the max)')
 
-args = parser.parse_args()
-print args.accumulate(args.integers)
+ARGS = PARSER.parse_args()
+print ARGS.accumulate(ARGS.integers)

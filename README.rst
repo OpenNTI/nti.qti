@@ -14,11 +14,11 @@ Below is a table showing how QTI maps to NTI, an "X" means that no equivalent ex
 +--------------------------------------+----------------------------------+
 | choiceInteraction (multiple answers) | MultipleChoiceMultipleAnswerPart |
 +--------------------------------------+----------------------------------+
-| orderInteraction                     | OrderingPart                     |
+| orderInteraction                     | X                                |
 +--------------------------------------+----------------------------------+
 | associateInteraction                 | X                                |
 +--------------------------------------+----------------------------------+
-| matchInteraction                     | MatchingPart                     |
+| matchInteraction                     | MatchingPart, OrderingPart       |
 +--------------------------------------+----------------------------------+
 | gapMatchInteraction                  | X                                |
 +--------------------------------------+----------------------------------+

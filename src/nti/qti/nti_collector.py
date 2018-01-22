@@ -1,19 +1,19 @@
-from parsers import ChoiceInteraction
-from parsers import ExtendedTextInteraction
-from parsers import MatchInteraction
-from parsers import TextEntryInteraction
-from parsers import UploadInteraction
-
 from re import compile as compile_pattern
+
+from src.nti.qti.parsers import ChoiceInteraction
+from src.nti.qti.parsers import ExtendedTextInteraction
+from src.nti.qti.parsers import MatchInteraction
+from src.nti.qti.parsers import TextEntryInteraction
+from src.nti.qti.parsers import UploadInteraction
 
 
 class NTICollector(object):
 
     def __init__(self, file_name):
-        if type(file_name) is str:
+        if isinstance(file_name, str):
             self.file_name = file_name
         else:
-            raise TypeError('File name needs to be a str type.')
+            raise TypeError('file_name needs to be a str type')
 
         if not file_name.lower().endswith('.json'):
             raise TypeError('file_name must be a .json file')
@@ -21,7 +21,7 @@ class NTICollector(object):
         class_re = '"Class": "(.+Part)",?'
         self.class_pattern = compile_pattern(class_re)
 
-        identifier_re = '"(NTIID|ntiid)": "(tag:.+_(.+)\.naq\.qid\.content(\..+))",?'
+        identifier_re = r'"(NTIID|ntiid)": "(tag:.+_(.+)\.naq\.qid(\.content)?(\..+))",?'
         self.identifier_pattern = compile_pattern(identifier_re)
 
         prompt_re = '"content": "(.*)",?'
@@ -53,12 +53,17 @@ class NTICollector(object):
         self.prompt = ''
         self.title = ''
         self.value_single = ''
+        self.class_type = ''
 
         self.choices = []
         self.labels = []
         self.questions = []
         self.solutions = []
         self.values = []
+
+        self.types = ('MultipleChoicePart', 'MultipleChoiceMultipleAnswerPart', 'OrderingPart',
+                      'MatchingPart', 'FreeResponsePart', 'ModeledContentPart', 'FilePart',
+                      'SymbolicMathPart', 'AssignmentPart')
 
     def collect(self):
         infile = open(self.file_name, 'r')
@@ -74,7 +79,7 @@ class NTICollector(object):
                 matcher = self.identifier_pattern.search(line)
                 if matcher is not None:
                     self.identifier = str(matcher.group(2))
-                    self.title = str(matcher.group(3)) + str(matcher.group(4))
+                    self.title = str(matcher.group(3)) + str(matcher.group(5))
 
             if '"content":' in line:
                 matcher = self.prompt_pattern.search(line)
@@ -85,7 +90,8 @@ class NTICollector(object):
                 self.questions.append(UploadInteraction(self.identifier, self.prompt, self.title))
 
             if '"Class": "FreeResponsePart",' in line:
-                while '"Class": "Question"' not in line and self.line_counter is not self.total_lines:
+                while '"Class": "Question"' not in line and self.line_counter is not \
+                        self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -108,8 +114,12 @@ class NTICollector(object):
                 self.choices = []
                 self.values = []
 
-            if '"Class": "MatchingPart"' in line:
-                while '"Class": "Question"' not in line and self.line_counter is not self.total_lines:
+            if '"Class": "MatchingPart"' in line or '"Class": "OrderingPart"' in line:
+                matcher = self.class_pattern.search(line)
+                if matcher is not None:
+                    self.class_type = matcher.group(1)
+                while '"Class": "Question"' not in line and self.line_counter is not \
+                        self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -140,16 +150,23 @@ class NTICollector(object):
                             if matcher is not None:
                                 self.values.append(str(matcher.group(1)))
 
-                self.questions.append(
-                    MatchInteraction(self.identifier, self.prompt, self.title, self.labels, self.solutions,
-                                     self.values))
+                if self.class_type == 'MatchingPart':
+                    self.questions.append(
+                        MatchInteraction(self.identifier, self.prompt, self.title, self.labels,
+                                         self.solutions, self.values))
+
+                elif self.class_type == 'OrderingPart':
+                    self.questions.append(
+                        MatchInteraction(self.identifier, self.prompt, self.title, self.labels,
+                                         self.solutions, self.values))
 
                 self.labels = []
                 self.values = []
                 self.solutions = []
 
             if '"Class": "ModeledContentPart"' in line:
-                self.questions.append(ExtendedTextInteraction(self.identifier, self.prompt, self.title))
+                self.questions.append(ExtendedTextInteraction(self.identifier, self.prompt,
+                                                              self.title))
 
             if '"Class": "MultipleChoicePart",' in line:
                 while '"weight":' not in line:
@@ -178,8 +195,8 @@ class NTICollector(object):
                         if matcher is not None:
                             self.values.append(matcher.group(1))
 
-                self.questions.append(
-                    ChoiceInteraction(self.identifier, self.prompt, self.title, self.values, self.choices))
+                self.questions.append(ChoiceInteraction(self.identifier, self.prompt, self.title,
+                                                        self.values, self.choices))
 
                 self.choices = []
                 self.values = []
@@ -215,14 +232,15 @@ class NTICollector(object):
                             if matcher is not None:
                                 self.values.append(matcher.group(1))
 
-                self.questions.append(
-                    ChoiceInteraction(self.identifier, self.prompt, self.title, self.values, self.choices))
+                self.questions.append(ChoiceInteraction(self.identifier, self.prompt, self.title,
+                                                        self.values, self.choices))
 
                 self.choices = []
                 self.values = []
 
             if '"Class": "SymbolicMathPart",' in line:
-                while '"Class": "Question"' not in line and self.line_counter is not self.total_lines:
+                while '"Class": "Question"' not in line and self.line_counter is not \
+                        self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -240,14 +258,20 @@ class NTICollector(object):
                             self.value_single = str(matcher.group(1))
 
                 self.questions.append(
-                    TextEntryInteraction(self.identifier, self.prompt, self.title, self.value_single, True))
+                    TextEntryInteraction(self.identifier, self.prompt, self.title,
+                                         self.value_single, True))
 
                 self.choices = []
                 self.values = []
 
+            class_type_matcher = self.class_pattern.search(line)
+            if class_type_matcher is not None and class_type_matcher.group(1) not in self.types:
+                print self.class_pattern.search(line).group(1) + ' type on line ' + \
+                      str(self.line_counter) + ' has not been implemented'
+
     def convert(self, qti=True, nti=True):
         if not self.questions:
-            raise ValueError('Questions[] cannot be empty')
+            raise ValueError('questions[] cannot be empty')
 
         if qti:
             for interaction in self.questions:
@@ -262,8 +286,3 @@ class NTICollector(object):
         for i, l in enumerate(open(self.file_name)):
             pass
         return i + 1
-
-
-mom = NTICollector('dumb.json')
-mom.collect()
-mom.convert(True, False)

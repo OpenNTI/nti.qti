@@ -58,12 +58,11 @@ class QTICollector(object):
             prompt = choice_interaction.find(self.name_space + 'prompt')
             self.prompt = prompt.text
 
-            index = 0
-            for choice in choice_interaction.findall(self.name_space + 'singleChoice'):
+            for index, choice in \
+                    enumerate(choice_interaction.findall(self.name_space + 'singleChoice')):
                 self.choices.append(choice.text)
                 if choice.attrib['identifier'] in self.temp:
                     self.values.append(str(index))
-                index = index + 1
 
             choice_output = ChoiceInteraction(self.identifier, self.prompt, self.title, self.values,
                                               self.choices)
@@ -93,28 +92,24 @@ class QTICollector(object):
                 self.check_0.append(modified_0)
                 self.check_1.append(modified_1)
 
-            index = 0
             num = 0
             temp_0 = list(self.values)
-            for value in self.values:
+            for index, value in enumerate(self.values):
                 if self.values[index] in self.values[:index]:
                     temp_0[index] = self.values.index(value)
                 else:
                     temp_0[index] = num
                     num = num + 1
-                index = index + 1
             self.values = list(temp_0)
 
-            index = 0
             num = 0
             temp_1 = list(self.labels)
-            for label in self.labels:
+            for index, label in enumerate(self.labels):
                 if self.labels[index] in self.labels[:index]:
                     temp_1[index] = self.labels.index(label)
                 else:
                     temp_1[index] = num
                     num = num + 1
-                index = index + 1
             self.labels = list(temp_1)
 
             for index in range(max(len(self.values), len(self.labels))):
@@ -128,14 +123,12 @@ class QTICollector(object):
             self.labels = []
             self.values = []
             for simple_match_set in match_interaction.findall(self.name_space + 'simpleMatchSet'):
-                index = 0
-                for choice in simple_match_set:
+                for index, choice in enumerate(simple_match_set):
                     identifier = choice.attrib['identifier']
                     if identifier in self.check_0:
                         self.labels.insert(self.check_0.index(identifier), choice.text)
                     elif identifier in self.check_1:
                         self.values.insert(self.check_1.index(identifier), choice.text)
-                    index = index + 1
 
             match_output = MatchInteraction(self.identifier, self.prompt, self.title, self.labels,
                                             self.solutions, self.values)

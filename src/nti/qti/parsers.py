@@ -9,6 +9,7 @@ from json import dumps
 from json import loads
 
 from re import compile as compile_pattern
+from re import findall
 from re import sub
 from re import split
 
@@ -90,8 +91,8 @@ class ChoiceInteraction(object):
                                   {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                    'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
                                    'xsi:schemaLocation':
-                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                       "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                       "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
                                    'identifier': self.identifier,
                                    'title': self.title,
                                    'adaptive': adaptive,
@@ -222,8 +223,8 @@ class ExtendedTextInteraction(object):
                                   {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                    'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
                                    'xsi:schemaLocation':
-                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                       "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                       "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
                                    'identifier': self.identifier,
                                    'title': self.title,
                                    'adaptive': adaptive,
@@ -269,7 +270,7 @@ class ExtendedTextInteraction(object):
 # NOT USABLE
 class InlineChoiceInteraction(object):
 
-    def __init__(self, identifier, prompt, title, wordbank, solutions):
+    def __init__(self, identifier, prompt, title, wordbank, solutions, nti):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -298,6 +299,11 @@ class InlineChoiceInteraction(object):
         else:
             raise TypeError('solutions[] needs to be a list type')
 
+        if isinstance(nti, bool):
+            self.nti = nti
+        else:
+            raise TypeError('nti needs to be a bool type')
+
         if not identifier:
             raise ValueError('identifier cannot be empty')
 
@@ -312,6 +318,13 @@ class InlineChoiceInteraction(object):
 
         self.char = self.dictionary(1)
         self.double_char = self.dictionary(2)
+
+        if nti:
+            prompt_pattern = compile_pattern('<input type=\"blankfield\" name=\"(\d{3})\" />')
+            self.numbers = findall(prompt_pattern, self.prompt)
+
+            prompt_pattern = compile_pattern('<input type=\"blankfield\" name=\"\d{3}\" />')
+            self.prompt = split(prompt_pattern, self.prompt)
 
     def to_qti(self, adaptive='false', time_dependent='false', shuffle='false'):
         wordbank = deepcopy(self.wordbank)
@@ -333,11 +346,15 @@ class InlineChoiceInteraction(object):
                                    'title': self.title,
                                    'adaptive': adaptive,
                                    'timeDependent': time_dependent})
+        for item in range(len(self.numbers)):
+
         # outcome_declaration
         SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
                                                            'cardinality': 'single',
                                                            'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
+        prompt = SubElement(item_body, 'p')
+
         match_interaction = SubElement(item_body, 'matchInteraction', {'responseIdentifier':
                                                                        'RESPONSE',
                                                                        'shuffle': shuffle,
@@ -484,8 +501,8 @@ class MatchInteraction(object):
                                   {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                    'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
                                    'xsi:schemaLocation':
-                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                       "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                       "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
                                    'identifier': self.identifier,
                                    'title': self.title,
                                    'adaptive': adaptive,
@@ -668,8 +685,8 @@ class TextEntryInteraction(object):
                                   {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                    'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
                                    'xsi:schemaLocation':
-                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                       "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                       "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
                                    'identifier': self.identifier,
                                    'title': self.title,
                                    'adaptive': adaptive,
@@ -803,8 +820,8 @@ class UploadInteraction(object):
                                   {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                    'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
                                    'xsi:schemaLocation':
-                                   "http://www.imsglobal.org/xsd/imsqti_v2p2 "
-                                   "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
+                                       "http://www.imsglobal.org/xsd/imsqti_v2p2 "
+                                       "http://www.imsglobal.org/xsd/qti/qtiv2p2/imsqti_v2p2.xsd",
                                    'identifier': self.identifier,
                                    'title': self.title,
                                    'adaptive': adaptive,

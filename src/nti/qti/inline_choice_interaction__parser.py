@@ -3,6 +3,7 @@
 
 import fileinput
 import re
+from copy import deepcopy
 
 regexOrdering = '"(\\d+)": (\\d+),?'
 patternOrdering = re.compile(regexOrdering)
@@ -67,7 +68,7 @@ alphabet = {
     '25': 'Z',
 }
 
-infile = fileinput.input('assessment_index.json')
+infile = fileinput.input('evil.json')
 for line in infile:
     if '"Class": "Poll",' in line:
         while '"Class": "Question",' not in line:
@@ -160,8 +161,8 @@ for line in infile:
             output.write('</responseDeclaration>\n\n')
             output.write(inputs.pop(0))
             output.write('\n\t<inlineChoiceInteraction responseIdentifier="RESPONSE1" shuffle="false">')
-            widt = wids.copy()
-            wordt = words.copy()
+            widt = deepcopy(wids)
+            wordt = deepcopy(words)
             while len(widt) is not 0 and len(wordt) is not 0:
                 output.write('\n\t\t<inlineChoice identifier="' + widt.pop(0) + '">' + wordt.pop(0) + '</inlineChoice>')
             output.write('\n</inlineChoiceInteraction>\n')

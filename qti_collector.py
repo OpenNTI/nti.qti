@@ -3,11 +3,11 @@ from re import sub
 
 from xml.etree import ElementTree
 
-from src.nti.qti.parsers import ChoiceInteraction
-from src.nti.qti.parsers import ExtendedTextInteraction
-from src.nti.qti.parsers import MatchInteraction
-from src.nti.qti.parsers import TextEntryInteraction
-from src.nti.qti.parsers import UploadInteraction
+from parsers import ChoiceInteraction
+from parsers import ExtendedTextInteraction
+from parsers import MatchInteraction
+from parsers import TextEntryInteraction
+from parsers import UploadInteraction
 
 
 class QTICollector(object):

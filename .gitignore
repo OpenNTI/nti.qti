@@ -1,9 +1,21 @@
 *.py[cod]
 *.xml
 *.json
+*.txt
 
 .git/
 .idea/
 old/
+questions/
+
+Makefile
+make.bat
+__init__.py
+conf.py
+inline_choice_interaction__parser.py
+new.py
+new_collector.py
+test.py
+index.rst
 
 *.DS_Store

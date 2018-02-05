@@ -1,10 +1,11 @@
 from re import compile as compile_pattern
 
-from src.nti.qti.parsers import ChoiceInteraction
-from src.nti.qti.parsers import ExtendedTextInteraction
-from src.nti.qti.parsers import MatchInteraction
-from src.nti.qti.parsers import TextEntryInteraction
-from src.nti.qti.parsers import UploadInteraction
+from parsers import ChoiceInteraction
+from parsers import ExtendedTextInteraction
+from parsers import InlineChoiceInteraction
+from parsers import MatchInteraction
+from parsers import TextEntryInteraction
+from parsers import UploadInteraction
 
 
 class NTICollector(object):
@@ -21,16 +22,20 @@ class NTICollector(object):
         self.line_counter = 0
         self.total_lines = sum(1 for line in open(file_name) if line.rstrip())
 
+        self.class_type = ''
+        self.content = ''
         self.identifier = ''
         self.prompt = ''
         self.title = ''
+        self.wid = ''
+        self.word = ''
         self.value_single = ''
-        self.class_type = ''
 
         self.choices = []
         self.labels = []
         self.questions = []
         self.solutions = []
+        self.words = []
         self.values = []
 
         self.types = ('AssignmentPart', 'FilePart', 'FillInTheBlankWithWordBankPart',
@@ -82,32 +87,53 @@ class NTICollector(object):
                         self.line_counter += 1
                         line = next(infile)
                     elif '"input":' in line:
-                        matcher = compile_pattern('"input": "(.+),?').search(line)
+                        matcher = compile_pattern('"input": "(.+)",?').search(line)
                         if matcher is not None:
                             self.prompt += ' ' + matcher.group(1)
 
-                    if '"values": {' in line:
+                    if '"value": {' in line:
                         while '}' not in line:
                             self.line_counter += 1
                             line = next(infile)
 
-                            matcher = compile_pattern('"(\\d{3})": [').search(line)
+                            matcher = compile_pattern('"(\\d{3})": \\[').search(line)
                             if matcher is not None:
                                 self.labels.append(str(matcher.group(1)))
 
-                            matcher = compile_pattern("(\\d)").search(line)
+                            matcher = compile_pattern('"(\\d)"(?!:)').search(line)
                             if matcher is not None:
                                 self.solutions.append(str(matcher.group(1)))
 
-                    if '"wordbank": {' in line:
-                        while '}' not in line:
+                    if '"entries": [' in line:
+                        while ']' not in line:
+                            self.line_counter += 1
+                            line = next(infile)
+                            matcher = compile_pattern('"content": "(.*)",?').search(line)
+                            if matcher is not None:
+                                self.content = str(matcher.group(1))
+                            matcher = compile_pattern('"wid": "(.*)",?').search(line)
+                            if matcher is not None:
+                                self.wid = str(matcher.group(1))
+                            matcher = compile_pattern('"word": "(.*)",?').search(line)
+                            if matcher is not None:
+                                self.word = str(matcher.group(1))
 
+                            if self.content and self.wid:
+                                self.words.append(self.Word(self.content, self.wid))
+                                self.content = ''
+                                self.wid = ''
+                            elif self.word and self.wid:
+                                self.words.append(self.Word(self.word, self.wid))
+                                self.content = ''
+                                self.wid = ''
 
-                self.questions.append(
-                    TextEntryInteraction(self.identifier, self.prompt, self.title, self.values))
+                self.questions.append(InlineChoiceInteraction(self.identifier, self.prompt,
+                                                              self.title, self.labels,
+                                                              self.solutions, self.words, True))
 
                 self.labels = []
                 self.solutions = []
+                self.words = []
 
             if '"Class": "FreeResponsePart",' in line:
                 while '"Class": "Question"' not in line and self.line_counter is not \
@@ -324,7 +350,6 @@ class NTICollector(object):
                 raise TypeError('content needs to be a str type')
 
             if isinstance(wid, str):
-                self.content = content
+                self.wid = wid
             else:
-                raise TypeError('content needs to be a int type')
-
+                raise TypeError('wid needs to be a str type')

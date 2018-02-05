@@ -9,7 +9,6 @@ from json import dumps
 from json import loads
 
 from re import compile as compile_pattern
-from re import findall
 from re import sub
 from re import split
 
@@ -67,7 +66,7 @@ class ChoiceInteraction(object):
 
         if len(values) > 1:
             self.multiple_answer = True
-        elif len(values) == 1:
+        elif len(values) is 1:
             self.multiple_answer = False
         else:
             raise ValueError('values[] cannot be empty')
@@ -267,10 +266,9 @@ class ExtendedTextInteraction(object):
         nti_file.close()
 
 
-# NOT USABLE
 class InlineChoiceInteraction(object):
 
-    def __init__(self, identifier, prompt, title, wordbank, solutions, nti):
+    def __init__(self, identifier, prompt, title, labels, solutions, wordbank, nti):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -289,8 +287,8 @@ class InlineChoiceInteraction(object):
         else:
             raise TypeError('title needs to be a str type')
 
-        if isinstance(wordbank, list):
-            self.wordbank = wordbank
+        if isinstance(labels, list):
+            self.labels = labels
         else:
             raise TypeError('labels[] needs to be a list type')
 
@@ -298,6 +296,11 @@ class InlineChoiceInteraction(object):
             self.solutions = solutions
         else:
             raise TypeError('solutions[] needs to be a list type')
+
+        if isinstance(wordbank, list):
+            self.wordbank = wordbank
+        else:
+            raise TypeError('wordbank[] needs to be a list type')
 
         if isinstance(nti, bool):
             self.nti = nti
@@ -311,30 +314,36 @@ class InlineChoiceInteraction(object):
             raise ValueError('prompt cannot be empty')
 
         if not wordbank:
-            raise ValueError('wordbank[] cannot be empty')
+            raise ValueError('words[] cannot be empty')
 
         if not solutions:
             raise ValueError('solutions[] cannot be empty')
+
+        if len(labels) is not len(solutions):
+            raise ValueError('labels[] must have the same length as solutions[]')
+
+        self.content = ''
+        self.input = ''
 
         self.char = self.dictionary(1)
         self.double_char = self.dictionary(2)
 
-        if nti:
-            prompt_pattern = compile_pattern('<input type=\"blankfield\" name=\"(\d{3})\" />')
-            self.numbers = findall(prompt_pattern, self.prompt)
-
-            prompt_pattern = compile_pattern('<input type=\"blankfield\" name=\"\d{3}\" />')
-            self.prompt = split(prompt_pattern, self.prompt)
-
     def to_qti(self, adaptive='false', time_dependent='false', shuffle='false'):
-        wordbank = deepcopy(self.wordbank)
+        labels = deepcopy(self.labels)
         solutions = deepcopy(self.solutions)
+        wordbank = deepcopy(self.wordbank)
+
+        if not labels:
+            raise ValueError('labels[] cannot be empty')
+
+        if not solutions:
+            raise ValueError('solutions[] cannot be empty')
 
         if not wordbank:
             raise ValueError('wordbank[] cannot be empty')
 
-        if not solutions:
-            raise ValueError('solutions[] cannot be empty')
+        prompt_pattern = compile_pattern('<input type=\\\\"blankfield\\\\" name=\\\\"\d{3}\\\\" />')
+        mod_prompt = split(prompt_pattern, self.prompt)
 
         assessment_item = Element('assessmentItem',
                                   {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
@@ -346,33 +355,45 @@ class InlineChoiceInteraction(object):
                                    'title': self.title,
                                    'adaptive': adaptive,
                                    'timeDependent': time_dependent})
-        for item in range(len(self.numbers)):
-
+        for item in range(len(self.labels)):
+            response_declaration = SubElement(assessment_item, 'responseDeclaration', {
+                'identifier': 'RESPONSE' + str(labels[item]), 'cardinality': 'single', 'baseType':
+                    'identifier'
+            })
+            correct_response = SubElement(response_declaration, 'correctResponse')
+            value = SubElement(correct_response, 'value')
+            value.text = self.char[solutions[item]]
+            mapping = SubElement(response_declaration, 'mapping')
+            for num in range(len(self.labels)):
+                if self.char[solutions[item]] == self.char[solutions[num]]:
+                    # map_entry
+                    SubElement(mapping, 'mapEntry', {
+                        'mapKey': self.char[solutions[num]], 'mappedValue': '1'})
+                else:
+                    # map_entry
+                    SubElement(mapping, 'mapEntry', {
+                        'mapKey': self.char[solutions[num]], 'mappedValue': '0'})
         # outcome_declaration
         SubElement(assessment_item, 'outcomeDeclaration', {'identifier': 'SCORE',
                                                            'cardinality': 'single',
                                                            'baseType': 'float'})
         item_body = SubElement(assessment_item, 'itemBody')
         prompt = SubElement(item_body, 'p')
-
-        match_interaction = SubElement(item_body, 'matchInteraction', {'responseIdentifier':
-                                                                       'RESPONSE',
-                                                                       'shuffle': shuffle,
-                                                                       'maxAssociations': '0'})
-        prompt__sub_element = SubElement(match_interaction, 'prompt')
-        prompt__sub_element.text = self.prompt
-        simple_match_set_1 = SubElement(match_interaction, 'simpleMatchSet')
-        identifier = 0
-        while wordbank:
-            simple_associable_choice = SubElement(simple_match_set_1, 'simpleAssociableChoice',
-                                                  {'identifier': self.char[str(identifier)],
-                                                   'matchMax': '1'})
-            simple_associable_choice.text = wordbank.pop(0)
-            identifier += 1
+        prompt.text = mod_prompt.pop(0)
+        while labels:
+            inline_choice_interaction = SubElement(prompt, 'inlineChoiceInteraction', {
+                'responseIdentifier': 'RESPONSE' + str(labels.pop(0)), 'shuffle': shuffle
+            })
+            for num in range(len(solutions)):
+                inline_choice = SubElement(inline_choice_interaction, 'inlineChoice', {
+                    'identifier': self.char[wordbank[num].wid]
+                })
+                inline_choice.text = wordbank[num].content
+            inline_choice_interaction.tail = mod_prompt.pop(0)
         # response_processing
         SubElement(assessment_item, 'responseProcessing',
                    {'template':
-                    "http://www.imsglobal.org/question/qti_v2p2/rptemplates/match_correct"})
+                    "http://www.imsglobal.org/question/qti_v2p2/rptemplates/map_response"})
 
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
@@ -382,31 +403,51 @@ class InlineChoiceInteraction(object):
         qti_file.close()
 
     def to_nti(self):
-        wordbank = deepcopy(self.wordbank)
+        labels = deepcopy(self.labels)
         solutions = deepcopy(self.solutions)
+        wordbank = deepcopy(self.wordbank)
 
-        mime_type_q = '"application/vnd.nextthought.naquestion"'
-        mime_type_ma = '"application/vnd.nextthought.assessment.matchingpart"'
-        mime_type_ma_s = '"application/vnd.nextthought.assessment.matchingsolution"'
+        mime_type_q = '"application/vnd.nextthought.naquestionfillintheblankwordbank"'
+        mime_type_b = '"application/vnd.nextthought.assessment.fillintheblankwithwordbankpart"'
+        mime_type_b_s = \
+            '"application/vnd.nextthought.assessment.fillintheblankwithwordbanksolution"'
+        mime_type_w = '"application/vnd.nextthought.naqwordbank"'
+        mime_type_we = '"application/vnd.nextthought.naqwordentry"'
 
-        if not wordbank:
-            raise ValueError('wordbank[] cannot be empty')
+        if compile_pattern('<a.*></a> ').match(self.prompt) is not None:
+            self.input = sub('<a.*></a> ', '', self.prompt)
+            prompt_mod = compile_pattern('(<a.*></a>).*').match(self.prompt).group(1)
+        else:
+            prompt_mod = self.prompt
+
+        if not labels:
+            raise ValueError('labels[] cannot be empty')
 
         if not solutions:
             raise ValueError('solutions[] cannot be empty')
 
+        if not wordbank:
+            raise ValueError('wordbank[] cannot be empty')
+
         nti_json = '{"Class":"Question", "MimeType":' + mime_type_q + ', "NTIID":"' + \
-                   self.identifier + '", "content":"' + self.prompt + '", "ntiid":"' + \
-                   self.identifier + '", "parts":[{"Class":"MatchingPart", "MimeType":' + \
-                   mime_type_ma + ', "content":"", "explanation":"", "hints":[], "labels":["'
+                   self.identifier + '", "content":"' + prompt_mod + '", "ntiid":"' + \
+                   self.identifier + '", "parts":[{"Class":"FillInTheBlankWithWordBankPart", ' \
+                   '"MimeType":' + mime_type_b + ', "content":"", "explanation":"", "hints":[], ' \
+                   '"inputs":"' + self.input + '", "solutions":[{"Class":"MatchingSolution", ' \
+                   '"MimeType":' + mime_type_b_s + ', "value":{'
+        while labels:
+            nti_json += '"' + labels.pop(0) + '":["' + solutions.pop(0) + '"]'
+            if len(labels) is 1:
+                nti_json += ','
+        nti_json += '}, "weight":1.0}], "wordbank":{"Class":"WordBank", "MimeType":' + mime_type_w \
+                    + ', "entries":['
         while wordbank:
+            nti_json += '{"Class":"WordEntry", "MimeType":' + mime_type_we + ', "content":"' + \
+                        wordbank[0].content + '", "lang":"en", "wid":"' + wordbank[0].wid + '", ' \
+                        '"word":"' + wordbank.pop(0).content + '"}'
             if len(wordbank) is 1:
-                nti_json += wordbank.pop(0) + '"], '
-            else:
-                nti_json += wordbank.pop(0) + '", "'
-        nti_json += \
-            '"solutions":[{"Class":"MatchingSolution", "MimeType":' + mime_type_ma_s + ', "value":{'
-        nti_json += '"weight":1.0}], "values":["'
+                nti_json += ','
+        nti_json += '], "unique":true}}], "wordbank":null}'
 
         parsed = loads(nti_json)
 
@@ -751,7 +792,7 @@ class TextEntryInteraction(object):
                        self.identifier + '", "parts":[{"Class":"FreeResponsePart", "MimeType":' + \
                        mime_type_f + ', "content":"", "explanation":"", "hints":[], "solutions":['
             while values:
-                if len(values) == 1:
+                if len(values) is 1:
                     nti_json += '{"Class":"FreeResponseSolution", "MimeType":' + mime_type_f_s + \
                                 ', "value":"' + values.pop(0) + '", "weight":1.0}]}]}'
                 else:

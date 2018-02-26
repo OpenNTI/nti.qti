@@ -19,6 +19,8 @@ from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
 from xml.etree.ElementTree import tostring
 
+from manifest import Manifest
+
 
 class ChoiceInteraction(object):
 
@@ -132,6 +134,8 @@ class ChoiceInteraction(object):
         qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
+
+        Manifest(self.title, 'choiceInteraction')
 
     def to_nti(self):
         choices = deepcopy(self.choices)
@@ -247,6 +251,8 @@ class ExtendedTextInteraction(object):
         qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
+
+        Manifest(self.title, 'extendedTextInteraction')
 
     def to_nti(self):
         mime_type_q = '"application/vnd.nextthought.naquestion"'
@@ -400,6 +406,8 @@ class InlineChoiceInteraction(object):
         qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
+
+        Manifest(self.title, 'inlineChoiceInteraction')
 
     def to_nti(self):
         labels = deepcopy(self.labels)
@@ -598,6 +606,8 @@ class MatchInteraction(object):
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
+        Manifest(self.title, 'matchInteraction')
+
     def to_nti(self):
         labels = deepcopy(self.labels)
         solutions = deepcopy(self.solutions)
@@ -779,6 +789,8 @@ class TextEntryInteraction(object):
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
+        Manifest(self.title, 'textEntryInteraction')
+
     def to_nti(self):
         if not self.math:
             values = deepcopy(self.values)
@@ -887,6 +899,8 @@ class UploadInteraction(object):
         qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
+
+        Manifest(self.title, 'uploadInteraction')
 
     def to_nti(self):
         mime_type_q = '"application/vnd.nextthought.naquestion"'

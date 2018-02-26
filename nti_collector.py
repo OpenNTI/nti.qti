@@ -1,4 +1,14 @@
+from datetime import datetime
+
+from os import listdir
+from os import path
+from os import remove
+
 from re import compile as compile_pattern
+
+from sys import modules
+
+from zipfile import ZipFile
 
 from parsers import ChoiceInteraction
 from parsers import ExtendedTextInteraction
@@ -6,8 +16,6 @@ from parsers import InlineChoiceInteraction
 from parsers import MatchInteraction
 from parsers import TextEntryInteraction
 from parsers import UploadInteraction
-
-from sys import modules
 
 
 class NTICollector(object):
@@ -355,6 +363,14 @@ class NTICollector(object):
         else:
             for interaction in self.questions:
                 interaction.to_qti()
+
+        zip_file = ZipFile('export-' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + '.zip', 'w')
+
+        for question in listdir(path.dirname(__file__)):
+            print question
+            if question.endswith('.zip') and not question.startswith('export-'):
+                zip_file.write(question)
+                remove(question)
 
     class Word(object):
 

@@ -19,3 +19,12 @@ test.py
 index.rst
 
 *.DS_Store
+/TestCourse.mc.1.zip
+TestCourse.mc.1
+TestCourse.mc.1 2/
+TestCourse.mc.1 3/
+TestCourse.mc.1.zip
+_build/
+_static/
+_templates/
+tag:nextthought.com,2011-10:NTIAlpha-NAQ-NTI1000_TestCourse.naq.qid.content.mc.1.zip

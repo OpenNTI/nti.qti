@@ -5,6 +5,7 @@ from xml.etree import ElementTree
 
 from parsers import ChoiceInteraction
 from parsers import ExtendedTextInteraction
+from parsers import InlineChoiceInteraction
 from parsers import MatchInteraction
 from parsers import TextEntryInteraction
 from parsers import UploadInteraction
@@ -30,17 +31,20 @@ class QTICollector(object):
             raise NotImplementedError('must use namespace ' + self.name_space)
 
         self.identifier = ''
-        self.title = ''
         self.prompt = ''
+        self.title = ''
         self.value_single = ''
 
-        self.values = []
-        self.labels = []
         self.check_0 = []
         self.check_1 = []
+        self.choices = []
+        self.labels = []
         self.solutions = []
         self.temp = []
-        self.choices = []
+        self.wordbank = []
+        self.values = []
+
+        self.collect()
 
     def collect(self):
         self.identifier = self.root.attrib['identifier']
@@ -140,6 +144,7 @@ class QTICollector(object):
 
                 response_declaration = self.root.find(self.name_space + 'responseDeclaration')
                 mapping = response_declaration.find(self.name_space + 'mapping')
+
                 if mapping is not None:
                     for map_entry in mapping:
                         self.values.append(map_entry.attrib['mapKey'])
@@ -157,23 +162,67 @@ class QTICollector(object):
                 prompt = item_body.find(self.name_space + 'p')
                 text_interaction = prompt.find(self.name_space + 'textEntryInteraction')
                 length = int(text_interaction.attrib['expectedLength'])
+
                 if compile_pattern(r'\n\s{6}').match(prompt.text) is not None and self.values:
                     self.prompt = sub(r'\n\s{6}', '', prompt.text) + '_' * length + '.'
-                elif compile_pattern(r'\n\s{6}').match(prompt.text) is not None and not self.values:
-                    self.prompt = sub(r'\n\s{6}', '', prompt.text)
                 else:
-                    raise NotImplementedError('sorry')
+                    self.prompt = sub(r'\n\s{6}', '', prompt.text)
 
                 if self.values:
                     text_output = TextEntryInteraction(self.identifier, self.prompt, self.title,
                                                        self.values)
                     text_output.to_nti()
-                elif not self.values:
+                else:
                     math_output = TextEntryInteraction(self.identifier, self.prompt, self.title,
                                                        self.value_single, True)
                     math_output.to_nti()
-                else:
-                    raise ZeroDivisionError('something is not right')
+
+            elif self.root.find(self.name_space + 'itemBody').find(self.name_space + 'p').\
+                    find(self.name_space + 'inlineChoiceInteraction') is not None:
+                self.prompt = []
+
+                for response_declaration in self.root:
+                    try:
+                        if response_declaration.attrib['baseType'] == 'identifier':
+                            correct_response = response_declaration. \
+                                find(self.name_space + 'correctResponse')
+                            correct_value = correct_response.find(self.name_space + 'value')
+                            self.solutions.append(str(correct_value.text))
+                    except KeyError:
+                        pass
+
+                item_body = self.root.find(self.name_space + 'itemBody')
+                prompt = item_body.find(self.name_space + 'p')
+                inline_choice_interaction = prompt.find(self.name_space + 'inlineChoiceInteraction')
+
+                index = 0
+                for inline_choice in inline_choice_interaction:
+                    if inline_choice.attrib['identifier'] in self.solutions:
+                        self.solutions[self.solutions.index(inline_choice.attrib['identifier'])]\
+                            = str(index)
+                        self.wordbank.append(self.Word(inline_choice.text, str(index)))
+                    else:
+                        self.wordbank.append(self.Word(inline_choice.text, str(index)))
+                    index = index + 1
+
+                for integer in self.solutions:
+                    self.labels.append(str('%03d' % (int(integer) + 1,)))
+
+                self.prompt.append(sub(r'\n\s{4,6}', '', prompt.text))
+
+                for tail in prompt:
+                    self.prompt.append(sub(r'\n\s{4,6}', '', tail.tail))
+
+                temp = self.prompt.pop(0)
+                for label in self.labels:
+                    temp = temp + '<input type=\\"blankfield\\" name=\\"' + label + '\\" />'
+                    temp = temp + self.prompt.pop(0)
+                self.prompt = temp
+
+                inline_output = InlineChoiceInteraction(self.identifier, self.prompt, self.title,
+                                                        self.labels, self.solutions, self.wordbank,
+                                                        False)
+                inline_output.to_nti()
 
         elif self.root.find(self.name_space + 'itemBody').\
                 find(self.name_space + 'uploadInteraction') is not None:
@@ -187,3 +236,16 @@ class QTICollector(object):
 
         else:
             raise NotImplementedError('there is no valid question type to convert')
+
+    class Word(object):
+
+        def __init__(self, content, wid):
+            if isinstance(content, str):
+                self.content = content
+            else:
+                raise TypeError('content needs to be a str type')
+
+            if isinstance(wid, str):
+                self.wid = wid
+            else:
+                raise TypeError('wid needs to be a str type')

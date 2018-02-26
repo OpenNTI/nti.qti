@@ -2,7 +2,6 @@ from copy import deepcopy
 
 from io import open as open_file
 
-# noinspection PyUnresolvedReferences
 from itertools import product
 
 from json import dumps
@@ -66,7 +65,7 @@ class ChoiceInteraction(object):
 
         if len(values) > 1:
             self.multiple_answer = True
-        elif len(values) is 1:
+        elif len(values) == 1:
             self.multiple_answer = False
         else:
             raise ValueError('values[] cannot be empty')
@@ -164,7 +163,7 @@ class ChoiceInteraction(object):
                     else '"MultipleChoicePart"') + ', "MimeType":' + \
                    (mime_type_mc_ma if self.multiple_answer else mime_type_mc) + ', "choices":["'
         while choices:
-            if len(choices) is 1:
+            if len(choices) == 1:
                 nti_json += choices.pop(0) + '"], '
             else:
                 nti_json += choices.pop(0) + '", "'
@@ -172,12 +171,12 @@ class ChoiceInteraction(object):
                     ('"MultipleChoiceMultipleAnswerSolution"' if self.multiple_answer
                      else '"MultipleChoiceSolution"') + ', "MimeType":' + \
                     (mime_type_mc_ma_s if self.multiple_answer else mime_type_mc_s) + ', "value":'
-        if len(values) is 1:
+        if len(values) == 1:
             nti_json += values.pop(0) + ', '
         else:
             nti_json += '['
             while values:
-                if len(values) is 1:
+                if len(values) == 1:
                     nti_json += values.pop(0) + '], '
                 else:
                     nti_json += values.pop(0) + ', '
@@ -319,7 +318,7 @@ class InlineChoiceInteraction(object):
         if not solutions:
             raise ValueError('solutions[] cannot be empty')
 
-        if len(labels) is not len(solutions):
+        if len(labels) != len(solutions):
             raise ValueError('labels[] must have the same length as solutions[]')
 
         self.content = ''
@@ -433,11 +432,12 @@ class InlineChoiceInteraction(object):
                    self.identifier + '", "content":"' + prompt_mod + '", "ntiid":"' + \
                    self.identifier + '", "parts":[{"Class":"FillInTheBlankWithWordBankPart", ' \
                    '"MimeType":' + mime_type_b + ', "content":"", "explanation":"", "hints":[], ' \
-                   '"inputs":"' + self.input + '", "solutions":[{"Class":"MatchingSolution", ' \
-                   '"MimeType":' + mime_type_b_s + ', "value":{'
+                   '"input":"' + self.input + '", "solutions":[{"Class":' \
+                   '"FillInTheBlankWithWordBankSolution", "MimeType":' + mime_type_b_s + \
+                   ', "value":{'
         while labels:
             nti_json += '"' + labels.pop(0) + '":["' + solutions.pop(0) + '"]'
-            if len(labels) is 1:
+            if len(labels) == 1:
                 nti_json += ','
         nti_json += '}, "weight":1.0}], "wordbank":{"Class":"WordBank", "MimeType":' + mime_type_w \
                     + ', "entries":['
@@ -445,7 +445,7 @@ class InlineChoiceInteraction(object):
             nti_json += '{"Class":"WordEntry", "MimeType":' + mime_type_we + ', "content":"' + \
                         wordbank[0].content + '", "lang":"en", "wid":"' + wordbank[0].wid + '", ' \
                         '"word":"' + wordbank.pop(0).content + '"}'
-            if len(wordbank) is 1:
+            if len(wordbank) >= 1:
                 nti_json += ','
         nti_json += '], "unique":true}}], "wordbank":null}'
 
@@ -516,7 +516,7 @@ class MatchInteraction(object):
         if not values:
             raise ValueError('values[] cannot be empty')
 
-        if len(labels) is not len(values):
+        if len(labels) != len(values):
             raise ValueError('labels[] must have the same length as values[]')
 
         self.solution_pattern = compile_pattern('(.+) (.+)')
@@ -621,7 +621,7 @@ class MatchInteraction(object):
                    self.identifier + '", "parts":[{"Class":"MatchingPart", "MimeType":' + \
                    mime_type_ma + ', "content":"", "explanation":"", "hints":[], "labels":["'
         while labels:
-            if len(labels) is 1:
+            if len(labels) == 1:
                 nti_json += labels.pop(0) + '"], '
             else:
                 nti_json += labels.pop(0) + '", "'
@@ -629,14 +629,14 @@ class MatchInteraction(object):
             '"solutions":[{"Class":"MatchingSolution", "MimeType":' + mime_type_ma_s + ', "value":{'
         while solutions:
             matcher = self.solution_pattern.search(solutions[0])
-            if len(solutions) is 1:
+            if len(solutions) == 1:
                 nti_json += '"' + matcher.group(1) + '":' + matcher.group(2) + '}, '
             else:
                 nti_json += '"' + matcher.group(1) + '":' + matcher.group(2) + ', '
             solutions.pop(0)
         nti_json += '"weight":1.0}], "values":["'
         while values:
-            if len(values) is 1:
+            if len(values) == 1:
                 nti_json += values.pop(0) + '"]}]}'
             else:
                 nti_json += values.pop(0) + '", "'
@@ -792,7 +792,7 @@ class TextEntryInteraction(object):
                        self.identifier + '", "parts":[{"Class":"FreeResponsePart", "MimeType":' + \
                        mime_type_f + ', "content":"", "explanation":"", "hints":[], "solutions":['
             while values:
-                if len(values) is 1:
+                if len(values) == 1:
                     nti_json += '{"Class":"FreeResponseSolution", "MimeType":' + mime_type_f_s + \
                                 ', "value":"' + values.pop(0) + '", "weight":1.0}]}]}'
                 else:

@@ -7,14 +7,19 @@ from parsers import MatchInteraction
 from parsers import TextEntryInteraction
 from parsers import UploadInteraction
 
+from sys import modules
+
 
 class NTICollector(object):
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, class_type=''):
         if isinstance(file_name, str):
             self.file_name = file_name
         else:
             raise TypeError('file_name needs to be a str type')
+
+        if not isinstance(class_type, str):
+            raise TypeError('class_type needs to be a str type')
 
         if not file_name.lower().endswith('.json'):
             raise TypeError('file_name must be a .json file')
@@ -43,6 +48,9 @@ class NTICollector(object):
                       'MultipleChoicePart', 'MultipleChoiceMultipleAnswerPart', 'OrderingPart',
                       'SymbolicMathPart')
 
+        self.collect()
+        self.convert(class_type)
+
     def collect(self):
         infile = open(self.file_name, 'r')
         for line in infile:
@@ -70,7 +78,7 @@ class NTICollector(object):
                 self.questions.append(UploadInteraction(self.identifier, self.prompt, self.title))
 
             if '"Class": "FillInTheBlankWithWordBankPart",' in line:
-                while '"Class": "Question"' not in line and self.line_counter is not \
+                while '"Class": "Question"' not in line and not self.line_counter == \
                         self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
@@ -136,7 +144,7 @@ class NTICollector(object):
                 self.words = []
 
             if '"Class": "FreeResponsePart",' in line:
-                while '"Class": "Question"' not in line and self.line_counter is not \
+                while '"Class": "Question"' not in line and not self.line_counter == \
                         self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
@@ -164,7 +172,7 @@ class NTICollector(object):
                 matcher = compile_pattern('"Class": "(.+Part)",?').search(line)
                 if matcher is not None:
                     self.class_type = matcher.group(1)
-                while '"Class": "Question"' not in line and self.line_counter is not \
+                while '"Class": "Question"' not in line and not self.line_counter == \
                         self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
@@ -223,7 +231,7 @@ class NTICollector(object):
                                                               self.title))
 
             if '"Class": "MultipleChoicePart",' in line:
-                while '"Class": "Question"' not in line and self.line_counter is not \
+                while '"Class": "Question"' not in line and not self.line_counter == \
                         self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
@@ -259,7 +267,7 @@ class NTICollector(object):
                 self.values = []
 
             if '"Class": "MultipleChoiceMultipleAnswerPart",' in line:
-                while '"Class": "Question"' not in line and self.line_counter is not \
+                while '"Class": "Question"' not in line and not self.line_counter == \
                         self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
@@ -299,7 +307,7 @@ class NTICollector(object):
                 self.values = []
 
             if '"Class": "SymbolicMathPart",' in line:
-                while '"Class": "Question"' not in line and self.line_counter is not \
+                while '"Class": "Question"' not in line and not self.line_counter == \
                         self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
@@ -329,17 +337,24 @@ class NTICollector(object):
                 print compile_pattern('"Class": "(.+Part)",?').search(line).group(1) + \
                       ' type on line ' + str(self.line_counter) + ' has not been implemented'
 
-    def convert(self, qti=True, nti=True):
+    def convert(self, class_type=''):
         if not self.questions:
             raise ValueError('questions[] cannot be empty')
 
-        if qti:
+        if (isinstance(class_type, str) and class_type) and class_type in globals():
+            self.class_type = reduce(getattr, class_type.split("."), modules[__name__])
+        elif not isinstance(class_type, str):
+            raise TypeError('class_type needs to be a str type')
+        else:
+            self.class_type = None
+
+        if self.class_type:
+            for interaction in self.questions:
+                if isinstance(interaction, self.class_type):
+                    interaction.to_qti()
+        else:
             for interaction in self.questions:
                 interaction.to_qti()
-
-        if nti:
-            for interaction in self.questions:
-                interaction.to_nti()
 
     class Word(object):
 

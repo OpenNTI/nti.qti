@@ -86,8 +86,8 @@ class NTICollector(object):
                 self.questions.append(UploadInteraction(self.identifier, self.prompt, self.title))
 
             if '"Class": "FillInTheBlankWithWordBankPart",' in line:
-                while '"Class": "Question"' not in line and not self.line_counter == \
-                        self.total_lines:
+                while ('"Class": "Question"' not in line and '"Class": "Poll"' not in line) and \
+                        not self.line_counter == self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -151,9 +151,14 @@ class NTICollector(object):
                 self.solutions = []
                 self.words = []
 
+                if '"Class": "Poll",' in line:
+                    while '"Class": "Question"' not in line:
+                        self.line_counter += 1
+                        line = next(infile)
+
             if '"Class": "FreeResponsePart",' in line:
-                while '"Class": "Question"' not in line and not self.line_counter == \
-                        self.total_lines:
+                while ('"Class": "Question"' not in line and '"Class": "Poll"' not in line) and \
+                        not self.line_counter == self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -176,12 +181,17 @@ class NTICollector(object):
                 self.choices = []
                 self.values = []
 
+                if '"Class": "Poll",' in line:
+                    while '"Class": "Question"' not in line:
+                        self.line_counter += 1
+                        line = next(infile)
+
             if '"Class": "MatchingPart"' in line or '"Class": "OrderingPart"' in line:
                 matcher = compile_pattern('"Class": "(.+Part)",?').search(line)
                 if matcher is not None:
                     self.class_type = matcher.group(1)
-                while '"Class": "Question"' not in line and not self.line_counter == \
-                        self.total_lines:
+                while ('"Class": "Question"' not in line and '"Class": "Poll"' not in line) and \
+                        not self.line_counter == self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -234,13 +244,18 @@ class NTICollector(object):
                 self.values = []
                 self.solutions = []
 
+                if '"Class": "Poll",' in line:
+                    while '"Class": "Question"' not in line:
+                        self.line_counter += 1
+                        line = next(infile)
+
             if '"Class": "ModeledContentPart"' in line:
                 self.questions.append(ExtendedTextInteraction(self.identifier, self.prompt,
                                                               self.title))
 
             if '"Class": "MultipleChoicePart",' in line:
-                while '"Class": "Question"' not in line and not self.line_counter == \
-                        self.total_lines:
+                while ('"Class": "Question"' not in line and '"Class": "Poll"' not in line) and \
+                        not self.line_counter == self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -274,9 +289,14 @@ class NTICollector(object):
                 self.choices = []
                 self.values = []
 
+                if '"Class": "Poll",' in line:
+                    while '"Class": "Question"' not in line:
+                        self.line_counter += 1
+                        line = next(infile)
+
             if '"Class": "MultipleChoiceMultipleAnswerPart",' in line:
-                while '"Class": "Question"' not in line and not self.line_counter == \
-                        self.total_lines:
+                while ('"Class": "Question"' not in line and '"Class": "Poll"' not in line) and \
+                        not self.line_counter == self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -314,9 +334,14 @@ class NTICollector(object):
                 self.choices = []
                 self.values = []
 
+                if '"Class": "Poll",' in line:
+                    while '"Class": "Question"' not in line:
+                        self.line_counter += 1
+                        line = next(infile)
+
             if '"Class": "SymbolicMathPart",' in line:
-                while '"Class": "Question"' not in line and not self.line_counter == \
-                        self.total_lines:
+                while ('"Class": "Question"' not in line and '"Class": "Poll"' not in line) and \
+                        not self.line_counter == self.total_lines:
                     self.line_counter += 1
                     line = next(infile)
 
@@ -339,6 +364,11 @@ class NTICollector(object):
 
                 self.choices = []
                 self.values = []
+
+                if '"Class": "Poll",' in line:
+                    while '"Class": "Question"' not in line:
+                        self.line_counter += 1
+                        line = next(infile)
 
             class_type_matcher = compile_pattern('"Class": "(.+Part)",?').search(line)
             if class_type_matcher is not None and class_type_matcher.group(1) not in self.types:
@@ -367,7 +397,6 @@ class NTICollector(object):
         zip_file = ZipFile('export-' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + '.zip', 'w')
 
         for question in listdir(path.dirname(__file__)):
-            print question
             if question.endswith('.zip') and not question.startswith('export-'):
                 zip_file.write(question)
                 remove(question)

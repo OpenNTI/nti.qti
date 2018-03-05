@@ -13,11 +13,16 @@ from parsers import UploadInteraction
 
 class QTICollector(object):
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, path=''):
         if isinstance(file_name, str):
             self.file_name = file_name
         else:
             raise TypeError('file_name needs to be a str type')
+
+        if isinstance(path, str):
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
 
         if not file_name.lower().endswith('.xml'):
             raise TypeError('file_name must be a .xml file')
@@ -63,13 +68,13 @@ class QTICollector(object):
             self.prompt = prompt.text
 
             for index, choice in \
-                    enumerate(choice_interaction.findall(self.name_space + 'singleChoice')):
+                    enumerate(choice_interaction.findall(self.name_space + 'simpleChoice')):
                 self.choices.append(choice.text)
                 if choice.attrib['identifier'] in self.temp:
                     self.values.append(str(index))
 
             choice_output = ChoiceInteraction(self.identifier, self.prompt, self.title, self.values,
-                                              self.choices)
+                                              self.choices, self.path)
             choice_output.to_nti()
 
         elif self.root.find(self.name_space + 'itemBody').\
@@ -79,7 +84,8 @@ class QTICollector(object):
             prompt = choice_interaction.find(self.name_space + 'prompt')
             self.prompt = prompt.text
 
-            extended_output = ExtendedTextInteraction(self.identifier, self.prompt, self.title)
+            extended_output = ExtendedTextInteraction(self.identifier, self.prompt, self.title,
+                                                      self.path)
             extended_output.to_nti()
 
         elif self.root.find(self.name_space + 'itemBody').\
@@ -135,7 +141,7 @@ class QTICollector(object):
                         self.values.insert(self.check_1.index(identifier), choice.text)
 
             match_output = MatchInteraction(self.identifier, self.prompt, self.title, self.labels,
-                                            self.solutions, self.values)
+                                            self.solutions, self.values, self.path)
             match_output.to_nti()
 
         elif self.root.find(self.name_space + 'itemBody').find(self.name_space + 'p') is not None:
@@ -170,11 +176,11 @@ class QTICollector(object):
 
                 if self.values:
                     text_output = TextEntryInteraction(self.identifier, self.prompt, self.title,
-                                                       self.values)
+                                                       self.values, False, self.path)
                     text_output.to_nti()
                 else:
                     math_output = TextEntryInteraction(self.identifier, self.prompt, self.title,
-                                                       self.value_single, True)
+                                                       self.value_single, True, self.path)
                     math_output.to_nti()
 
             elif self.root.find(self.name_space + 'itemBody').find(self.name_space + 'p').\
@@ -221,7 +227,7 @@ class QTICollector(object):
 
                 inline_output = InlineChoiceInteraction(self.identifier, self.prompt, self.title,
                                                         self.labels, self.solutions, self.wordbank,
-                                                        False)
+                                                        False, self.path)
                 inline_output.to_nti()
 
         elif self.root.find(self.name_space + 'itemBody').\
@@ -231,7 +237,7 @@ class QTICollector(object):
             prompt = upload_interaction.find(self.name_space + 'prompt')
             self.prompt = prompt.text
 
-            upload_output = UploadInteraction(self.identifier, self.prompt, self.title)
+            upload_output = UploadInteraction(self.identifier, self.prompt, self.title, self.path)
             upload_output.to_nti()
 
         else:

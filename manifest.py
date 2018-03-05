@@ -4,6 +4,7 @@ from datetime import datetime
 
 from io import open as open_file
 
+from os import remove
 from os import urandom
 
 from xml.dom.minidom import parseString
@@ -106,4 +107,7 @@ class Manifest(object):
     def export(self):
         zip_file = ZipFile(self.identifier + '.zip', 'w')
         zip_file.write('imsmanifest.xml')
+        remove('imsmanifest.xml')
         zip_file.write(self.identifier + '.xml')
+        remove(self.identifier + '.xml')
+        zip_file.close()

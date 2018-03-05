@@ -24,7 +24,7 @@ from manifest import Manifest
 
 class ChoiceInteraction(object):
 
-    def __init__(self, identifier, prompt, title, values, choices):
+    def __init__(self, identifier, prompt, title, values, choices, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -52,6 +52,11 @@ class ChoiceInteraction(object):
             self.choices = choices
         else:
             raise TypeError('choices[] needs to be a list type')
+
+        if isinstance(path, str):
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
 
         if not identifier:
             raise ValueError('identifier cannot be empty')
@@ -131,7 +136,10 @@ class ChoiceInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        if not self.path:
+            qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        else:
+            qti_file = open_file(self.path + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -188,14 +196,17 @@ class ChoiceInteraction(object):
 
         parsed = loads(nti_json)
 
-        nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        if not self.path:
+            nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        else:
+            nti_file = open_file(self.path + self.title + '.json', 'w+', encoding="utf-8")
         nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
         nti_file.close()
 
 
 class ExtendedTextInteraction(object):
 
-    def __init__(self, identifier, prompt, title):
+    def __init__(self, identifier, prompt, title, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -213,6 +224,11 @@ class ExtendedTextInteraction(object):
                 self.title = title
         else:
             raise TypeError('title needs to be a str type')
+
+        if isinstance(path, str):
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
 
         if not identifier:
             raise ValueError('identifier cannot be empty')
@@ -248,7 +264,10 @@ class ExtendedTextInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        if not self.path:
+            qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        else:
+            qti_file = open_file(self.path + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -266,14 +285,17 @@ class ExtendedTextInteraction(object):
 
         parsed = loads(nti_json)
 
-        nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        if not self.path:
+            nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        else:
+            nti_file = open_file(self.path + self.title + '.json', 'w+', encoding="utf-8")
         nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
         nti_file.close()
 
 
 class InlineChoiceInteraction(object):
 
-    def __init__(self, identifier, prompt, title, labels, solutions, wordbank, nti):
+    def __init__(self, identifier, prompt, title, labels, solutions, wordbank, nti, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -312,6 +334,11 @@ class InlineChoiceInteraction(object):
         else:
             raise TypeError('nti needs to be a bool type')
 
+        if isinstance(path, str):
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
+
         if not identifier:
             raise ValueError('identifier cannot be empty')
 
@@ -324,8 +351,11 @@ class InlineChoiceInteraction(object):
         if not solutions:
             raise ValueError('solutions[] cannot be empty')
 
-        if len(labels) != len(solutions):
-            raise ValueError('labels[] must have the same length as solutions[]')
+        try:
+            if len(labels) != len(solutions):
+                raise ValueError('labels[] must have the same length as solutions[]')
+        except ValueError:
+            return None
 
         self.content = ''
         self.input = ''
@@ -367,6 +397,7 @@ class InlineChoiceInteraction(object):
             })
             correct_response = SubElement(response_declaration, 'correctResponse')
             value = SubElement(correct_response, 'value')
+            print self.identifier
             value.text = self.char[solutions[item]]
             mapping = SubElement(response_declaration, 'mapping')
             for num in range(len(self.labels)):
@@ -403,7 +434,10 @@ class InlineChoiceInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        if not self.path:
+            qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        else:
+            qti_file = open_file(self.path + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -459,7 +493,10 @@ class InlineChoiceInteraction(object):
 
         parsed = loads(nti_json)
 
-        nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        if not self.path:
+            nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        else:
+            nti_file = open_file(self.path + self.title + '.json', 'w+', encoding="utf-8")
         nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
         nti_file.close()
 
@@ -475,7 +512,7 @@ class InlineChoiceInteraction(object):
 
 class MatchInteraction(object):
 
-    def __init__(self, identifier, prompt, title, labels, solutions, values):
+    def __init__(self, identifier, prompt, title, labels, solutions, values, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -508,6 +545,11 @@ class MatchInteraction(object):
             self.values = values
         else:
             raise TypeError('values[] needs to be a list type')
+
+        if isinstance(path, str):
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
 
         if not identifier:
             raise ValueError('identifier cannot be empty')
@@ -602,7 +644,10 @@ class MatchInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        if not self.path:
+            qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        else:
+            qti_file = open_file(self.path + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -653,7 +698,10 @@ class MatchInteraction(object):
 
         parsed = loads(nti_json)
 
-        nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        if not self.path:
+            nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        else:
+            nti_file = open_file(self.path + self.title + '.json', 'w+', encoding="utf-8")
         nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
         nti_file.close()
 
@@ -669,7 +717,7 @@ class MatchInteraction(object):
 
 class TextEntryInteraction(object):
 
-    def __init__(self, identifier, prompt, title, values, math=False):
+    def __init__(self, identifier, prompt, title, values, math=False, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -703,6 +751,11 @@ class TextEntryInteraction(object):
                 self.values = values
             else:
                 raise TypeError('values needs to be a str type')
+
+        if isinstance(path, str):
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
 
         if not identifier:
             raise ValueError('identifier cannot be empty')
@@ -785,7 +838,10 @@ class TextEntryInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        if not self.path:
+            qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        else:
+            qti_file = open_file(self.path + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -836,14 +892,17 @@ class TextEntryInteraction(object):
 
             parsed = loads(nti_json)
 
-            nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+            if not self.path:
+                nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+            else:
+                nti_file = open_file(self.path + self.title + '.json', 'w+', encoding="utf-8")
             nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
             nti_file.close()
 
 
 class UploadInteraction(object):
 
-    def __init__(self, identifier, prompt, title):
+    def __init__(self, identifier, prompt, title, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -861,6 +920,11 @@ class UploadInteraction(object):
                 self.title = title
         else:
             raise TypeError('title needs to be a str type')
+
+        if isinstance(path, str):
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
 
         if not identifier:
             raise ValueError('identifier cannot be empty')
@@ -896,7 +960,10 @@ class UploadInteraction(object):
         rough_string = tostring(assessment_item)
         reparsed = parseString(rough_string)
 
-        qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        if not self.path:
+            qti_file = open_file(self.title + '.xml', 'w+', encoding="utf-8")
+        else:
+            qti_file = open_file(self.path + self.title + '.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
@@ -915,6 +982,9 @@ class UploadInteraction(object):
 
         parsed = loads(nti_json)
 
-        nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        if not self.path:
+            nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+        else:
+            nti_file = open_file(self.path + self.title + '.json', 'w+', encoding="utf-8")
         nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
         nti_file.close()

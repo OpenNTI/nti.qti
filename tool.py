@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser
+
 from glob import glob
-from os import path
+
 from os import walk
 
-parser = ArgumentParser(description='Export/Import NTI/QTI packages.')
-parser.add_argument('file', type=file, help='This is the file to be parsed.')
-parser.add_argument('parse', choices=['NTI', 'QTI'], help='Select NTI to convert file(s) to NTI'
+from os.path import join
+
+PARSER = ArgumentParser(description='Export/Import NTI/QTI packages.')
+PARSER.add_argument('file', type=file, help='This is the file to be parsed.')
+PARSER.add_argument('parse', choices=['NTI', 'QTI'], help='Select NTI to convert file(s) to NTI'
                                                           'and likewise for QTI.')
-args = parser.parse_args()
-print args.file
-print args.parse
-'''if args.parse.lower() == 'nti':
-    
+ARGS = PARSER.parse_args()
+print ARGS.file
+print ARGS.parse
+if ARGS.parse.lower() == 'nti':
+    pass
 else:
-    result = [y for x in walk(args.file) for y in glob(path.join(x[0], '*.txt'))]'''
+    RESULT = [y for x in walk(ARGS.file) for y in glob(join(x[0], '*.txt'))]

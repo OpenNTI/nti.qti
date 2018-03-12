@@ -143,7 +143,10 @@ class ChoiceInteraction(object):
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
-        Manifest(self.title, 'choiceInteraction')
+        if not self.path:
+            Manifest(self.title, 'choiceInteraction')
+        else:
+            Manifest(self.title, 'choiceInteraction', self.path)
 
     def to_nti(self):
         choices = deepcopy(self.choices)
@@ -271,7 +274,10 @@ class ExtendedTextInteraction(object):
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
-        Manifest(self.title, 'extendedTextInteraction')
+        if not self.path:
+            Manifest(self.title, 'extendedTextInteraction')
+        else:
+            Manifest(self.title, 'extendedTextInteraction', self.path)
 
     def to_nti(self):
         mime_type_q = '"application/vnd.nextthought.naquestion"'
@@ -345,17 +351,17 @@ class InlineChoiceInteraction(object):
         if not prompt:
             raise ValueError('prompt cannot be empty')
 
-        if not wordbank:
-            raise ValueError('words[] cannot be empty')
+        if not labels:
+            raise ValueError('labels[] cannot be empty')
 
         if not solutions:
             raise ValueError('solutions[] cannot be empty')
 
-        try:
-            if len(labels) != len(solutions):
-                raise ValueError('labels[] must have the same length as solutions[]')
-        except ValueError:
-            return None
+        if not wordbank:
+            raise ValueError('wordbank[] cannot be empty')
+
+        if len(labels) != len(solutions):
+            raise ValueError('labels[] must have the same length as solutions[]')
 
         self.content = ''
         self.input = ''
@@ -397,7 +403,6 @@ class InlineChoiceInteraction(object):
             })
             correct_response = SubElement(response_declaration, 'correctResponse')
             value = SubElement(correct_response, 'value')
-            print self.identifier
             value.text = self.char[solutions[item]]
             mapping = SubElement(response_declaration, 'mapping')
             for num in range(len(self.labels)):
@@ -441,7 +446,10 @@ class InlineChoiceInteraction(object):
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
-        Manifest(self.title, 'inlineChoiceInteraction')
+        if not self.path:
+            Manifest(self.title, 'inlineChoiceInteraction')
+        else:
+            Manifest(self.title, 'inlineChoiceInteraction', self.path)
 
     def to_nti(self):
         labels = deepcopy(self.labels)
@@ -651,7 +659,10 @@ class MatchInteraction(object):
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
-        Manifest(self.title, 'matchInteraction')
+        if not self.path:
+            Manifest(self.title, 'matchInteraction')
+        else:
+            Manifest(self.title, 'matchInteraction', self.path)
 
     def to_nti(self):
         labels = deepcopy(self.labels)
@@ -845,7 +856,10 @@ class TextEntryInteraction(object):
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
-        Manifest(self.title, 'textEntryInteraction')
+        if not self.path:
+            Manifest(self.title, 'textEntryInteraction')
+        else:
+            Manifest(self.title, 'textEntryInteraction', self.path)
 
     def to_nti(self):
         if not self.math:
@@ -967,7 +981,10 @@ class UploadInteraction(object):
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
-        Manifest(self.title, 'uploadInteraction')
+        if not self.path:
+            Manifest(self.title, 'uploadInteraction')
+        else:
+            Manifest(self.title, 'uploadInteraction', self.path)
 
     def to_nti(self):
         mime_type_q = '"application/vnd.nextthought.naquestion"'

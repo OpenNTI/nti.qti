@@ -1,10 +1,15 @@
 from datetime import datetime
 
 from os import listdir
-from os import path
+from os import makedirs
 from os import remove
 
+from os.path import dirname
+from os.path import isdir
+
 from re import compile as compile_pattern
+
+from shutil import rmtree
 
 from sys import modules
 
@@ -20,9 +25,24 @@ from parsers import UploadInteraction
 
 class NTICollector(object):
 
-    def __init__(self, file_name, class_type=''):
+    def __init__(self, file_name, path='', class_type=''):
+        if isinstance(path, str):
+            if path:
+                try:
+                    makedirs(path)
+                except OSError:
+                    if not isdir(path):
+                        raise
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
+
         if isinstance(file_name, str):
-            self.file_name = file_name
+            if path:
+                self.file_name = \
+                    compile_pattern('([\\/].*[\\/]).*[\\/]').search(path).group(1) + file_name
+            else:
+                self.file_name = file_name
         else:
             raise TypeError('file_name needs to be a str type')
 
@@ -33,7 +53,7 @@ class NTICollector(object):
             raise TypeError('file_name must be a .json file')
 
         self.line_counter = 0
-        self.total_lines = sum(1 for line in open(file_name) if line.rstrip())
+        self.total_lines = sum(1 for line in open(self.file_name) if line.rstrip())
 
         self.class_type = ''
         self.content = ''
@@ -83,7 +103,8 @@ class NTICollector(object):
                     self.prompt = matcher.group(1)
 
             if '"Class": "FilePart"' in line:
-                self.questions.append(UploadInteraction(self.identifier, self.prompt, self.title))
+                self.questions.append(UploadInteraction(self.identifier, self.prompt, self.title,
+                                                        self.path))
 
             if '"Class": "FillInTheBlankWithWordBankPart",' in line:
                 while ('"Class": "Question"' not in line and '"Class": "Poll"' not in line) and \
@@ -116,7 +137,7 @@ class NTICollector(object):
                             if matcher is not None:
                                 self.labels.append(str(matcher.group(1)))
 
-                            matcher = compile_pattern('"(\\d)"(?!:)').search(line)
+                            matcher = compile_pattern('"(\\d{1,3})"(?!:)').search(line)
                             if matcher is not None:
                                 self.solutions.append(str(matcher.group(1)))
 
@@ -145,7 +166,8 @@ class NTICollector(object):
 
                 self.questions.append(InlineChoiceInteraction(self.identifier, self.prompt,
                                                               self.title, self.labels,
-                                                              self.solutions, self.words, True))
+                                                              self.solutions, self.words, True,
+                                                              self.path))
 
                 self.labels = []
                 self.solutions = []
@@ -176,7 +198,8 @@ class NTICollector(object):
                             self.prompt += ' ' + matcher.group(1)
 
                 self.questions.append(
-                    TextEntryInteraction(self.identifier, self.prompt, self.title, self.values))
+                    TextEntryInteraction(self.identifier, self.prompt, self.title, self.values,
+                                         False, self.path))
 
                 self.choices = []
                 self.values = []
@@ -233,12 +256,12 @@ class NTICollector(object):
                 if self.class_type == 'MatchingPart':
                     self.questions.append(
                         MatchInteraction(self.identifier, self.prompt, self.title, self.labels,
-                                         self.solutions, self.values))
+                                         self.solutions, self.values, self.path))
 
                 elif self.class_type == 'OrderingPart':
                     self.questions.append(
                         MatchInteraction(self.identifier, self.prompt, self.title, self.labels,
-                                         self.solutions, self.values))
+                                         self.solutions, self.values, self.path))
 
                 self.labels = []
                 self.values = []
@@ -251,7 +274,7 @@ class NTICollector(object):
 
             if '"Class": "ModeledContentPart"' in line:
                 self.questions.append(ExtendedTextInteraction(self.identifier, self.prompt,
-                                                              self.title))
+                                                              self.title, self.path))
 
             if '"Class": "MultipleChoicePart",' in line:
                 while ('"Class": "Question"' not in line and '"Class": "Poll"' not in line) and \
@@ -284,7 +307,7 @@ class NTICollector(object):
                             self.values.append(matcher.group(1))
 
                 self.questions.append(ChoiceInteraction(self.identifier, self.prompt, self.title,
-                                                        self.values, self.choices))
+                                                        self.values, self.choices, self.path))
 
                 self.choices = []
                 self.values = []
@@ -329,7 +352,7 @@ class NTICollector(object):
                                 self.values.append(matcher.group(1))
 
                 self.questions.append(ChoiceInteraction(self.identifier, self.prompt, self.title,
-                                                        self.values, self.choices))
+                                                        self.values, self.choices, self.path))
 
                 self.choices = []
                 self.values = []
@@ -360,7 +383,7 @@ class NTICollector(object):
 
                 self.questions.append(
                     TextEntryInteraction(self.identifier, self.prompt, self.title,
-                                         self.value_single, True))
+                                         self.value_single, True, self.path))
 
                 self.choices = []
                 self.values = []
@@ -394,12 +417,26 @@ class NTICollector(object):
             for interaction in self.questions:
                 interaction.to_qti()
 
-        zip_file = ZipFile('export-' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + '.zip', 'w')
+        if not self.path:
+            zip_file = \
+                ZipFile('export-' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + '.zip', 'w')
 
-        for question in listdir(path.dirname(__file__)):
-            if question.endswith('.zip') and not question.startswith('export-'):
-                zip_file.write(question)
-                remove(question)
+            for question in listdir(dirname(__file__)):
+                if question.endswith('.zip') and not question.startswith('export-'):
+                    zip_file.write(question)
+                    remove(question)
+
+        else:
+            export_path = compile_pattern('([\\/].*[\\/]).*[\\/]').search(self.path).group(1)
+            zip_file = \
+                ZipFile(export_path + 'export-' + datetime.now().strftime('%Y-%m-%d_%H-%M-%S') +
+                        '.zip', 'w')
+
+            for question_name in listdir(dirname(self.path)):
+                question = self.path + question_name
+                zip_file.write(question, question_name)
+
+            rmtree(self.path)
 
     class Word(object):
 
@@ -413,3 +450,6 @@ class NTICollector(object):
                 self.wid = wid
             else:
                 raise TypeError('wid needs to be a str type')
+
+
+# NTICollector('index.json', '/Users/noah.monaghan/Documents/test/index/')

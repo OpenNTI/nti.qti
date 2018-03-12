@@ -1,17 +1,13 @@
-*.py[cpd]
-*.xml
 *.json
+*.py[cpd]
 *.txt
+*.xml
 *.zip
 
-__init__.py
-new_collector.py
+complete.py
 test.py
 
 .idea/
-_build/
-_static/
-_templates/
 old/
 
 *.DS_Store

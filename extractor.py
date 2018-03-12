@@ -45,4 +45,4 @@ class Extractor(object):
                 remove(dirname(zip_file.filename) + '/' + json_file)
 
 
-Extractor('/Users/noah.monaghan/Documents/test/export-2018-03-05_13-33-20.zip')
+# Extractor('/Users/noah.monaghan/Documents/test/export-2018-03-05_13-33-20.zip')

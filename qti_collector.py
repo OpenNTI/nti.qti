@@ -1,7 +1,7 @@
 from re import compile as compile_pattern
 from re import sub
 
-from xml.etree import ElementTree
+from xml.etree.ElementTree import parse
 
 from parsers import ChoiceInteraction
 from parsers import ExtendedTextInteraction
@@ -27,7 +27,7 @@ class QTICollector(object):
         if not file_name.lower().endswith('.xml'):
             raise TypeError('file_name must be a .xml file')
 
-        tree = ElementTree.parse(file_name)
+        tree = parse(file_name)
         self.root = tree.getroot()
 
         self.name_space = '{http://www.imsglobal.org/xsd/imsqti_v2p2}'

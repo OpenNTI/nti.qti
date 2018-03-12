@@ -17,7 +17,7 @@ from zipfile import ZipFile
 
 
 class Manifest(object):
-    def __init__(self, identifier, interaction_type, author='author'):
+    def __init__(self, identifier, interaction_type, path='', author='author'):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -27,6 +27,11 @@ class Manifest(object):
             self.interaction_type = interaction_type
         else:
             raise TypeError('interaction_type needs to be a str type')
+
+        if isinstance(path, str):
+            self.path = path
+        else:
+            raise TypeError('path needs to be a str type')
 
         if isinstance(author, str):
             self.author = author
@@ -98,16 +103,27 @@ class Manifest(object):
         rough_string = tostring(manifest)
         reparsed = parseString(rough_string)
 
-        qti_file = open_file('imsmanifest.xml', 'w+', encoding="utf-8")
+        if not self.path:
+            qti_file = open_file('imsmanifest.xml', 'w+', encoding="utf-8")
+        else:
+            qti_file = open_file(self.path + 'imsmanifest.xml', 'w+', encoding="utf-8")
         qti_file.write(reparsed.toprettyxml(indent="  "))
         qti_file.close()
 
         self.export()
 
     def export(self):
-        zip_file = ZipFile(self.identifier + '.zip', 'w')
-        zip_file.write('imsmanifest.xml')
-        remove('imsmanifest.xml')
-        zip_file.write(self.identifier + '.xml')
-        remove(self.identifier + '.xml')
-        zip_file.close()
+        if not self.path:
+            zip_file = ZipFile(self.identifier + '.zip', 'w')
+            zip_file.write('imsmanifest.xml')
+            remove('imsmanifest.xml')
+            zip_file.write(self.identifier + '.xml')
+            remove(self.identifier + '.xml')
+            zip_file.close()
+        else:
+            zip_file = ZipFile(self.path + self.identifier + '.zip', 'w')
+            zip_file.write(self.path + 'imsmanifest.xml')
+            remove(self.path + 'imsmanifest.xml')
+            zip_file.write(self.path + self.identifier + '.xml')
+            remove(self.path + self.identifier + '.xml')
+            zip_file.close()

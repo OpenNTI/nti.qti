@@ -4,7 +4,6 @@
 *.xml
 *.zip
 
-complete.py
 test.py
 
 .idea/

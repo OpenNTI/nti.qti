@@ -7,6 +7,8 @@ from io import open as open_file
 from os import remove
 from os import urandom
 
+from os.path import basename
+
 from xml.dom.minidom import parseString
 
 from xml.etree.ElementTree import Element
@@ -122,8 +124,9 @@ class Manifest(object):
             zip_file.close()
         else:
             zip_file = ZipFile(self.path + self.identifier + '.zip', 'w')
-            zip_file.write(self.path + 'imsmanifest.xml')
+            zip_file.write(self.path + 'imsmanifest.xml', basename(self.path + 'imsmanifest.xml'))
             remove(self.path + 'imsmanifest.xml')
-            zip_file.write(self.path + self.identifier + '.xml')
+            zip_file.write(self.path + self.identifier + '.xml',
+                           basename(self.path + self.identifier + '.xml'))
             remove(self.path + self.identifier + '.xml')
             zip_file.close()

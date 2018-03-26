@@ -450,6 +450,3 @@ class NTICollector(object):
                 self.wid = wid
             else:
                 raise TypeError('wid needs to be a str type')
-
-
-# NTICollector('index.json', '/Users/noah.monaghan/Documents/test/index/')

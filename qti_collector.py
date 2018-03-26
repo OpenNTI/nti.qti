@@ -80,8 +80,8 @@ class QTICollector(object):
         elif self.root.find(self.name_space + 'itemBody').\
                 find(self.name_space + 'extendedTextInteraction') is not None:
             item_body = self.root.find(self.name_space + 'itemBody')
-            choice_interaction = item_body.find(self.name_space + 'choiceInteraction')
-            prompt = choice_interaction.find(self.name_space + 'prompt')
+            extended_text_interaction = item_body.find(self.name_space + 'extendedTextInteraction')
+            prompt = extended_text_interaction.find(self.name_space + 'prompt')
             self.prompt = prompt.text
 
             extended_output = ExtendedTextInteraction(self.identifier, self.prompt, self.title,

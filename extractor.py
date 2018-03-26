@@ -30,19 +30,16 @@ class Extractor(object):
             remove(self.path[:-4] + '/' + zip_ref[:-4] + '/' + 'imsmanifest.xml')
             qti_file = listdir(self.path[:-4] + '/' + zip_ref[:-4] + '/')[0]
             QTICollector(self.path[:-4] + '/' + zip_ref[:-4] + '/' + qti_file,
-                         dirname(zip_file.filename) + '/')
+                         self.path[:-4] + '/')
             rmtree(self.path[:-4] + '/' + zip_ref[:-4] + '/')
             remove(self.path[:-4] + '/' + zip_ref)
-        rmtree(self.path[:-4] + '/')
         zip_file.close()
 
         zip_json = ZipFile(dirname(zip_file.filename) + '/nti-' +
                            datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + '.zip', 'w')
-        for json_file in listdir(dirname(zip_file.filename) + '/'):
+        for json_file in listdir(self.path[:-4] + '/'):
             if json_file.endswith('.json'):
-                zip_json.write(dirname(zip_file.filename) + '/' + json_file, 'nti-' +
+                zip_json.write(self.path[:-4] + '/' + json_file, 'nti-' +
                                datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + '/' + json_file)
-                remove(dirname(zip_file.filename) + '/' + json_file)
-
-
-# Extractor('/Users/noah.monaghan/Documents/test/export-2018-03-05_13-33-20.zip')
+                remove(self.path[:-4] + '/' + json_file)
+        rmtree(self.path[:-4] + '/')

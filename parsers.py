@@ -425,7 +425,7 @@ class InlineChoiceInteraction(object):
             inline_choice_interaction = SubElement(prompt, 'inlineChoiceInteraction', {
                 'responseIdentifier': 'RESPONSE' + str(labels.pop(0)), 'shuffle': shuffle
             })
-            for num in range(len(solutions)):
+            for num in range(len(wordbank)):
                 inline_choice = SubElement(inline_choice_interaction, 'inlineChoice', {
                     'identifier': self.char[wordbank[num].wid]
                 })
@@ -487,7 +487,7 @@ class InlineChoiceInteraction(object):
                    ', "value":{'
         while labels:
             nti_json += '"' + labels.pop(0) + '":["' + solutions.pop(0) + '"]'
-            if len(labels) == 1:
+            if len(labels) != 0:
                 nti_json += ','
         nti_json += '}, "weight":1.0}], "wordbank":{"Class":"WordBank", "MimeType":' + mime_type_w \
                     + ', "entries":['
@@ -883,7 +883,10 @@ class TextEntryInteraction(object):
 
             parsed = loads(nti_json)
 
-            nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+            if not self.path:
+                nti_file = open_file(self.title + '.json', 'w+', encoding="utf-8")
+            else:
+                nti_file = open_file(self.path + self.title + '.json', 'w+', encoding="utf-8")
             nti_file.write(unicode(dumps(parsed, indent=4, sort_keys=True)))
             nti_file.close()
 

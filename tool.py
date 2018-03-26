@@ -1,20 +1,27 @@
 #!/usr/bin/env python
 from argparse import ArgumentParser
 
-from glob import glob
+from os.path import basename
+from os.path import dirname
+from os.path import realpath
+from os.path import splitext
 
-from os import walk
+from nti_collector import NTICollector
 
-from os.path import join
+from qti_collector import QTICollector
+
+from extractor import Extractor
 
 PARSER = ArgumentParser(description='Export/Import NTI/QTI packages.')
 PARSER.add_argument('file', type=file, help='This is the file to be parsed.')
-PARSER.add_argument('parse', choices=['NTI', 'QTI'], help='Select NTI to convert file(s) to NTI'
-                                                          'and likewise for QTI.')
 ARGS = PARSER.parse_args()
-print ARGS.file
-print ARGS.parse
-if ARGS.parse.lower() == 'nti':
-    pass
+
+if ARGS.file.name.endswith('.json'):
+    NTICollector(basename(ARGS.file.name), realpath(ARGS.file.name)[:-5] + '/')
+elif ARGS.file.name.endswith('.zip'):
+    Extractor(realpath(ARGS.file.name))
+elif ARGS.file.name.endswith('.xml'):
+    QTICollector(realpath(ARGS.file.name), dirname(realpath(ARGS.file.name)))
 else:
-    RESULT = [y for x in walk(ARGS.file) for y in glob(join(x[0], '*.txt'))]
+    print 'file cannot end in ' + splitext(realpath(ARGS.file.name))[1]
+    print 'file must end in either .json, .zip, or .xml'

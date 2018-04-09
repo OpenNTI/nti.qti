@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+"""
+This module contains all the classes that allow for the command-line tool to function properly.
+
+In essence, this module allows for NTI JSON files to be converted into QTI XML files and vice versa.
+"""
 
 from argparse import ArgumentParser
 
@@ -35,6 +40,7 @@ from shutil import rmtree
 from string import ascii_uppercase
 
 from sys import modules
+from sys import exit as sys_exit
 
 from xml.dom.minidom import parseString
 
@@ -47,6 +53,13 @@ from zipfile import ZipFile
 
 
 class Manifest(object):
+    """Creates the manifest file for a given QTI file and zips the two files together.
+
+    :param str identifier: The name of the QTI file.
+    :param str interaction_type: The question's interaction type.
+    :param str path: The path to the QTI file.
+    :param str author: The author of the QTI file.
+    """
     def __init__(self, identifier, interaction_type, path='', author='author'):
         if isinstance(identifier, str):
             self.identifier = identifier
@@ -71,6 +84,7 @@ class Manifest(object):
         self.manifest()
 
     def manifest(self):
+        """Creates the manifest file for the given QTI XML file."""
         manifest = \
             Element('manifest',
                     {'xmlns': "http://www.imsglobal.org/xsd/imscp_v1p1",
@@ -143,6 +157,7 @@ class Manifest(object):
         self.export()
 
     def export(self):
+        """Zips the generated manifest file and the given QTI XML file together."""
         if not self.path:
             zip_file = ZipFile(self.identifier + '.zip', 'w')
             zip_file.write('imsmanifest.xml')
@@ -161,7 +176,15 @@ class Manifest(object):
 
 
 class ChoiceInteraction(object):
+    """Parses the given data into either a QTI XML file or NTI JSON file for Choice Interactions.
 
+    :param str identifier: The question's identifier.
+    :param str prompt: The question's prompt.
+    :param str title: The file's name and the question's title.
+    :param list of str values: The list of correct answers.
+    :param list of str choices: The list of possible choices.
+    :param str path: The path of the file to be created.
+    """
     def __init__(self, identifier, prompt, title, values, choices, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
@@ -221,6 +244,12 @@ class ChoiceInteraction(object):
         self.char = dict(zip(map(str, range(26)), ascii_uppercase))
 
     def to_qti(self, adaptive='false', time_dependent='false', shuffle='false'):
+        """Converts the given data into a QTI XML file.
+
+        :param adaptive: Determines if the question is adaptive or not.
+        :param time_dependent: Determines if the question is time-dependent or not.
+        :param shuffle: Determines if the question's choices are to be shuffled or not.
+        """
         choices = deepcopy(self.choices)
         values = deepcopy(self.values)
 
@@ -287,6 +316,7 @@ class ChoiceInteraction(object):
             Manifest(self.title, 'choiceInteraction', self.path)
 
     def to_nti(self):
+        """Converts the given data into an NTI JSON file."""
         choices = deepcopy(self.choices)
         values = deepcopy(self.values)
 
@@ -346,7 +376,14 @@ class ChoiceInteraction(object):
 
 
 class ExtendedTextInteraction(object):
+    """Parses the given data into either a QTI XML file or NTI JSON file for Extended Text
+    Interactions.
 
+    :param str identifier: The question's identifier.
+    :param str prompt: The question's prompt.
+    :param str title: The file's name and the question's title.
+    :param str path: The path of the file to be created.
+    """
     def __init__(self, identifier, prompt, title, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
@@ -378,6 +415,11 @@ class ExtendedTextInteraction(object):
             raise ValueError('prompt cannot be empty')
 
     def to_qti(self, adaptive='false', time_dependent='false'):
+        """Converts the given data into a QTI XML file.
+
+        :param adaptive: Determines if the question is adaptive or not.
+        :param time_dependent: Determines if the question is time-dependent or not.
+        """
         assessment_item = Element('assessmentItem',
                                   {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                    'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
@@ -418,6 +460,7 @@ class ExtendedTextInteraction(object):
             Manifest(self.title, 'extendedTextInteraction', self.path)
 
     def to_nti(self):
+        """Converts the given data into an NTI JSON file."""
         mime_type_q = '"application/vnd.nextthought.naquestion"'
         mime_type_model = '"application/vnd.nextthought.assessment.modeledcontentpart"'
 
@@ -438,8 +481,18 @@ class ExtendedTextInteraction(object):
 
 
 class InlineChoiceInteraction(object):
+    """Parses the given data into either a QTI XML file or NTI JSON file for Inline Choice
+    Interactions.
 
-    def __init__(self, identifier, prompt, title, labels, solutions, wordbank, nti, path=''):
+    :param str identifier: The question's identifier.
+    :param str prompt: The question's prompt.
+    :param str title: The file's name and the question's title.
+    :param list of str labels: The list of labels for solutions.
+    :param list of str solutions: The list of correct answers.
+    :param list of Word wordbank: The list of words to pick from.
+    :param str path: The path of the file to be created.
+    """
+    def __init__(self, identifier, prompt, title, labels, solutions, wordbank, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
         else:
@@ -473,11 +526,6 @@ class InlineChoiceInteraction(object):
         else:
             raise TypeError('wordbank[] needs to be a list type')
 
-        if isinstance(nti, bool):
-            self.nti = nti
-        else:
-            raise TypeError('nti needs to be a bool type')
-
         if isinstance(path, str):
             self.path = path
         else:
@@ -508,6 +556,12 @@ class InlineChoiceInteraction(object):
         self.double_char = self.dictionary(2)
 
     def to_qti(self, adaptive='false', time_dependent='false', shuffle='false'):
+        """Converts the given data into a QTI XML file.
+
+        :param adaptive: Determines if the question is adaptive or not.
+        :param time_dependent: Determines if the question is time-dependent or not.
+        :param shuffle: Determines if the question's choices are to be shuffled or not.
+        """
         labels = deepcopy(self.labels)
         solutions = deepcopy(self.solutions)
         wordbank = deepcopy(self.wordbank)
@@ -590,6 +644,7 @@ class InlineChoiceInteraction(object):
             Manifest(self.title, 'inlineChoiceInteraction', self.path)
 
     def to_nti(self):
+        """Converts the given data into an NTI JSON file."""
         labels = deepcopy(self.labels)
         solutions = deepcopy(self.solutions)
         wordbank = deepcopy(self.wordbank)
@@ -648,6 +703,7 @@ class InlineChoiceInteraction(object):
 
     @staticmethod
     def dictionary(size):
+        """Creates a dictionary of given size where {'0':'A', '1':'B', ..., 'n':'...Z'} ."""
         if size < 1:
             raise ValueError('size must be greater than 0')
         pre_dict = []
@@ -657,7 +713,16 @@ class InlineChoiceInteraction(object):
 
 
 class MatchInteraction(object):
+    """Parses the given data into either a QTI XML file or NTI JSON file for Match Interactions.
 
+    :param str identifier: The question's identifier.
+    :param str prompt: The question's prompt.
+    :param str title: The file's name and the question's title.
+    :param list of str labels: The list of labels to be matched from.
+    :param list of str solutions: The list of correct answers.
+    :param list of str values: The list of values to be matched to.
+    :param str path: The path of the file to be created.
+    """
     def __init__(self, identifier, prompt, title, labels, solutions, values, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
@@ -721,6 +786,12 @@ class MatchInteraction(object):
         self.double_char = self.dictionary(2)
 
     def to_qti(self, adaptive='false', time_dependent='false', shuffle='false'):
+        """Converts the given data into a QTI XML file.
+
+        :param adaptive: Determines if the question is adaptive or not.
+        :param time_dependent: Determines if the question is time-dependent or not.
+        :param shuffle: Determines if the question's choices are to be shuffled or not.
+        """
         labels = deepcopy(self.labels)
         solutions = deepcopy(self.solutions)
         values = deepcopy(self.values)
@@ -803,6 +874,7 @@ class MatchInteraction(object):
             Manifest(self.title, 'matchInteraction', self.path)
 
     def to_nti(self):
+        """Converts the given data into an NTI JSON file."""
         labels = deepcopy(self.labels)
         solutions = deepcopy(self.solutions)
         values = deepcopy(self.values)
@@ -856,6 +928,7 @@ class MatchInteraction(object):
 
     @staticmethod
     def dictionary(size):
+        """Creates a dictionary of given size where {'0':'A', '1':'B', ..., 'n':'...Z'} ."""
         if size < 1:
             raise ValueError('size must be greater than 0')
         pre_dict = []
@@ -865,7 +938,16 @@ class MatchInteraction(object):
 
 
 class TextEntryInteraction(object):
+    """Parses the given data into either a QTI XML file or NTI JSON file for Text Entry
+    Interactions.
 
+    :param str identifier: The question's identifier.
+    :param str prompt: The question's prompt.
+    :param str title: The file's name and the question's title.
+    :param list of str or str values: The list of correct answers.
+    :param bool math: Distinguishes math-based interactions from non-math-based ones.
+    :param str path: The path of the file to be created.
+    """
     def __init__(self, identifier, prompt, title, values, math=False, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
@@ -927,6 +1009,11 @@ class TextEntryInteraction(object):
             self.content = ''
 
     def to_qti(self, adaptive='false', time_dependent='false'):
+        """Converts the given data into a QTI XML file.
+
+        :param adaptive: Determines if the question is adaptive or not.
+        :param time_dependent: Determines if the question is time-dependent or not.
+        """
         length = str(len(self.values))
         new_prompt = split('_+', self.prompt)
         values = deepcopy(self.values)
@@ -1000,6 +1087,7 @@ class TextEntryInteraction(object):
             Manifest(self.title, 'textEntryInteraction', self.path)
 
     def to_nti(self):
+        """Converts the given data into an NTI JSON file."""
         if not self.math:
             values = deepcopy(self.values)
 
@@ -1056,7 +1144,13 @@ class TextEntryInteraction(object):
 
 
 class UploadInteraction(object):
+    """Parses the given data into either a QTI XML file or NTI JSON file for Choice Interactions.
 
+    :param str identifier: The question's identifier.
+    :param str prompt: The question's prompt.
+    :param str title: The file's name and the question's title.
+    :param str path: The path of the file to be created.
+    """
     def __init__(self, identifier, prompt, title, path=''):
         if isinstance(identifier, str):
             self.identifier = identifier
@@ -1088,6 +1182,11 @@ class UploadInteraction(object):
             raise ValueError('prompt cannot be empty')
 
     def to_qti(self, adaptive='false', time_dependent='false'):
+        """Converts the given data into a QTI XML file.
+
+        :param adaptive: Determines if the question is adaptive or not.
+        :param time_dependent: Determines if the question is time-dependent or not.
+        """
         assessment_item = Element('assessmentItem',
                                   {'xmlns': "http://www.imsglobal.org/xsd/imsqti_v2p2",
                                    'xmlns:xsi': "http://www.w3.org/2001/XMLSchema-instance",
@@ -1128,6 +1227,7 @@ class UploadInteraction(object):
             Manifest(self.title, 'uploadInteraction', self.path)
 
     def to_nti(self):
+        """Converts the given data into an NTI JSON file."""
         mime_type_q = '"application/vnd.nextthought.naquestion"'
         mime_type_f = '"application/vnd.nextthought.assessment.filepart"'
 
@@ -1149,7 +1249,11 @@ class UploadInteraction(object):
 
 
 class NTICollector(object):
+    """Traverses a given NTI JSON file and collects data so that it can be converted.
 
+    :param str file_name: The file's name.
+    :param str path: The path of the file to be created.
+    """
     def __init__(self, file_name, path='', class_type=''):
         if isinstance(path, str):
             if path:
@@ -1170,9 +1274,6 @@ class NTICollector(object):
                 self.file_name = file_name
         else:
             raise TypeError('file_name needs to be a str type')
-
-        if not isinstance(class_type, str):
-            raise TypeError('class_type needs to be a str type')
 
         if not file_name.lower().endswith('.json'):
             raise TypeError('file_name must be a .json file')
@@ -1205,6 +1306,7 @@ class NTICollector(object):
         self.convert(class_type)
 
     def collect(self):
+        """Collects data from source NTI JSON file and converts files along the way."""
         infile = open(self.file_name, 'r')
         for line in infile:
             self.line_counter += 1
@@ -1291,7 +1393,7 @@ class NTICollector(object):
 
                 self.questions.append(InlineChoiceInteraction(self.identifier, self.prompt,
                                                               self.title, self.labels,
-                                                              self.solutions, self.words, True,
+                                                              self.solutions, self.words,
                                                               self.path))
 
                 self.labels = []
@@ -1524,19 +1626,23 @@ class NTICollector(object):
                       ' type on line ' + str(self.line_counter) + ' has not been implemented'
 
     def convert(self, class_type=''):
+        """Converts all the collected questions into QTI XML files and zips them up together.
+
+        :param str class_type: The interaction type conversion is limited to.
+        """
         if not self.questions:
             raise ValueError('questions[] cannot be empty')
 
         if (isinstance(class_type, str) and class_type) and class_type in globals():
-            self.class_type = reduce(getattr, class_type.split("."), modules[__name__])
+            class_type = reduce(getattr, class_type.split("."), modules[__name__])
         elif not isinstance(class_type, str):
             raise TypeError('class_type needs to be a str type')
         else:
-            self.class_type = None
+            class_type = None
 
-        if self.class_type:
+        if class_type:
             for interaction in self.questions:
-                if isinstance(interaction, self.class_type):
+                if isinstance(interaction, class_type):
                     interaction.to_qti()
         else:
             for interaction in self.questions:
@@ -1564,7 +1670,11 @@ class NTICollector(object):
             rmtree(self.path)
 
     class Word(object):
+        """Creates a Word with associated content and identifier.
 
+        :param str content: Content of the word.
+        :param str wid: Identifier of the word.
+        """
         def __init__(self, content, wid):
             if isinstance(content, str):
                 self.content = content
@@ -1578,7 +1688,11 @@ class NTICollector(object):
 
 
 class QTICollector(object):
+    """Traverses a given QTI XML file and collects data so that it can be converted.
 
+    :param str file_name: The file's name.
+    :param str path: The path of the file to be created.
+    """
     def __init__(self, file_name, path=''):
         if isinstance(file_name, str):
             self.file_name = file_name
@@ -1618,6 +1732,7 @@ class QTICollector(object):
         self.collect()
 
     def collect(self):
+        """Collects data from the source QTI XML file and converts it at the end."""
         self.identifier = self.root.attrib['identifier']
         self.title = self.root.attrib['title']
 
@@ -1793,7 +1908,7 @@ class QTICollector(object):
 
                 inline_output = InlineChoiceInteraction(self.identifier, self.prompt, self.title,
                                                         self.labels, self.solutions, self.wordbank,
-                                                        False, self.path)
+                                                        self.path)
                 inline_output.to_nti()
 
         elif self.root.find(self.name_space + 'itemBody').\
@@ -1810,7 +1925,11 @@ class QTICollector(object):
             raise NotImplementedError('there is no valid question type to convert')
 
     class Word(object):
+        """Creates a Word with associated content and identifier.
 
+        :param str content: Content of the word.
+        :param str wid: Identifier of the word.
+        """
         def __init__(self, content, wid):
             if isinstance(content, str):
                 self.content = content
@@ -1824,6 +1943,10 @@ class QTICollector(object):
 
 
 class Extractor(object):
+    """Extracts a given zip containing QTI XML zip files into a zip containing NTI JSON files.
+
+    :param str path: The path of the file to be extracted.
+    """
     def __init__(self, path):
         if isinstance(path, str):
             self.path = path
@@ -1833,6 +1956,7 @@ class Extractor(object):
         self.extract()
 
     def extract(self):
+        """Extracts the given zip and converts all its containing questions into NTI JSON files."""
         zip_file = ZipFile(self.path, 'r')
         zip_file.extractall(self.path[:-4])
         for zip_ref in zip_file.namelist():
@@ -1858,7 +1982,12 @@ class Extractor(object):
 
 PARSER = ArgumentParser(description='Export/Import NTI/QTI packages.')
 PARSER.add_argument('file', type=file, help='This is the file to be parsed.')
-ARGS = PARSER.parse_args()
+ARGS = None
+try:
+    ARGS = PARSER.parse_args()
+except IOError:
+    print 'file not found'
+    sys_exit(1)
 
 if ARGS.file.name.endswith('.json'):
     NTICollector(basename(ARGS.file.name), realpath(ARGS.file.name)[:-5] + '/')

@@ -1958,26 +1958,26 @@ class Extractor(object):
     def extract(self):
         """Extracts the given zip and converts all its containing questions into NTI JSON files."""
         zip_file = ZipFile(self.path, 'r')
-        zip_file.extractall(self.path[:-4])
+        path = self.path[:-4]
+        zip_file.extractall(path)
         for zip_ref in zip_file.namelist():
-            extracted = ZipFile(self.path[:-4] + '/' + zip_ref, 'r')
-            extracted.extractall(self.path[:-4] + '/' + zip_ref[:-4] + '/')
-            remove(self.path[:-4] + '/' + zip_ref[:-4] + '/' + 'imsmanifest.xml')
-            qti_file = listdir(self.path[:-4] + '/' + zip_ref[:-4] + '/')[0]
-            QTICollector(self.path[:-4] + '/' + zip_ref[:-4] + '/' + qti_file,
-                         self.path[:-4] + '/')
-            rmtree(self.path[:-4] + '/' + zip_ref[:-4] + '/')
-            remove(self.path[:-4] + '/' + zip_ref)
+            extracted = ZipFile(path + '/' + zip_ref, 'r')
+            extracted.extractall(path + '/' + zip_ref[:-4] + '/')
+            remove(path + '/' + zip_ref[:-4] + '/' + 'imsmanifest.xml')
+            qti_file = listdir(path + '/' + zip_ref[:-4] + '/')[0]
+            QTICollector(path + '/' + zip_ref[:-4] + '/' + qti_file, path + '/')
+            rmtree(path + '/' + zip_ref[:-4] + '/')
+            remove(path + '/' + zip_ref)
         zip_file.close()
 
         zip_json = ZipFile(dirname(zip_file.filename) + '/nti-' +
                            datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + '.zip', 'w')
-        for json_file in listdir(self.path[:-4] + '/'):
+        for json_file in listdir(path + '/'):
             if json_file.endswith('.json'):
-                zip_json.write(self.path[:-4] + '/' + json_file, 'nti-' +
+                zip_json.write(path + '/' + json_file, 'nti-' +
                                datetime.now().strftime('%Y-%m-%d_%H-%M-%S') + '/' + json_file)
-                remove(self.path[:-4] + '/' + json_file)
-        rmtree(self.path[:-4] + '/')
+                remove(path + '/' + json_file)
+        rmtree(path + '/')
 
 
 PARSER = ArgumentParser(description='Export/Import NTI/QTI packages.')
@@ -1990,11 +1990,12 @@ except IOError:
     sys_exit(1)
 
 if ARGS.file.name.endswith('.json'):
-    NTICollector(basename(ARGS.file.name), realpath(ARGS.file.name)[:-5] + '/')
+    NTICollector(basename(ARGS.file.name),
+                 realpath(ARGS.file.name)[:-5] + b2a_hex(urandom(16)) + '/')
 elif ARGS.file.name.endswith('.zip'):
     Extractor(realpath(ARGS.file.name))
 elif ARGS.file.name.endswith('.xml'):
-    QTICollector(realpath(ARGS.file.name), dirname(realpath(ARGS.file.name)))
+    QTICollector(realpath(ARGS.file.name), dirname(realpath(ARGS.file.name)) + '/')
 else:
     print 'file cannot end in ' + splitext(realpath(ARGS.file.name))[1]
     print 'file must end in either .json, .zip, or .xml'

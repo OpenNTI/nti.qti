@@ -1,6 +1,5 @@
 *.json
 *.py[cpd]
-*.txt
 *.xml
 *.zip
 
